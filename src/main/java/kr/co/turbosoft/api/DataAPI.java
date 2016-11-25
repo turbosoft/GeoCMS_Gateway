@@ -32,7 +32,6 @@ public class DataAPI  {
 	private List<Object> resultList;
 	private int resultIntegerValue;
 	private String resultStringValue;
-//	private HashMap<String, List<String>> param2;
 
 	public void setDataDao(DataDao dataDao){
 		this.dataDao = dataDao;
