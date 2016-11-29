@@ -227,7 +227,7 @@ public class UserAPI {
 	}
 	
 	//회원 권한 수정
-	@RequestMapping(value = "/cms/typeUpdate/{token}/{data}", method = RequestMethod.GET, produces="application/json")
+	@RequestMapping(value = "/cms/typeUpdate/{token}/{data}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String typeUpdateService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -441,16 +441,6 @@ public class UserAPI {
 			
 			result = new HashMap<String, String>();
 			result = userDao.selectShareUserLen(tempHash);
-			
-//			if((searchText != null && !"".equals(searchText) && !"null".equals(searchText)) || (resultList != null && resultList.size()>0)){
-//				resultList = userDao.selectShareUser(tempHash);
-//			}else{
-//				resultList = null;
-//			}
-			
-//			if(userArr == null && (searchText == null || "" .equals(searchText)) && "first".equals(type)){
-//				resultList = null;
-//			}
 			
 			if(resultList != null && resultList.size() > 0) {
 				resultJSON.put("Code", 100);
