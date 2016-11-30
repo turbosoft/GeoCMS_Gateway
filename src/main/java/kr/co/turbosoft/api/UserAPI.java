@@ -442,6 +442,16 @@ public class UserAPI {
 			result = new HashMap<String, String>();
 			result = userDao.selectShareUserLen(tempHash);
 			
+//			if((searchText != null && !"".equals(searchText) && !"null".equals(searchText)) || (resultList != null && resultList.size()>0)){
+//				resultList = userDao.selectShareUser(tempHash);
+//			}else{
+//				resultList = null;
+//			}
+			
+//			if(userArr == null && (searchText == null || "" .equals(searchText)) && "first".equals(type)){
+//				resultList = null;
+//			}
+			
 			if(resultList != null && resultList.size() > 0) {
 				resultJSON.put("Code", 100);
 				resultJSON.put("Message", Message.code100);

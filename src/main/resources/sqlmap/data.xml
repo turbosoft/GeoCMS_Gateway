@@ -1114,5 +1114,416 @@
     		AND
     			ID = '${loginId}'
     </delete>
+
+<!--     <select id="selectProjectList" parameterType="paramMap" resultType="resultMap"> -->
+<!-- 	    SELECT  -->
+<!-- 			 ID -->
+<!--         	,PROJECTNAME -->
+<!--         	,IDX -->
+<!--         	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!--         	,SHARETYPE -->
+<!-- 		FROM  -->
+<!-- 			TEST_PROJECT_CONTENT -->
+<!-- 		WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		SHARETYPE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			SHARETYPE = 2 AND '${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND  -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+<!--     </select> -->
+    
+<!--     <select id="selectProjectListLen" parameterType="paramMap" resultType="resultMap"> -->
+<!-- 	    SELECT  -->
+<!-- 			COUNT(*) TOTAL_CNT -->
+<!-- 		FROM  -->
+<!-- 			TEST_PROJECT_CONTENT -->
+<!-- 		WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		SHARETYPE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			SHARETYPE = 2 AND '${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND  -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+<!--     </select> -->
+    
+<!--     <insert id="insertProject" parameterType="paramMap" useGeneratedKeys="true" keyProperty="idx"> -->
+<!--         INSERT INTO TEST_PROJECT_CONTENT -->
+<!--         ( -->
+<!--         	 ID -->
+<!--         	,PROJECTNAME -->
+<!--         	,UDATE -->
+<!--         	,SHARE -->
+<!--         ) -->
+<!--         VALUES -->
+<!--         ( -->
+<!--         	 '${loginId}' -->
+<!--         	,'${projectName}' -->
+<!--         	, NOW() -->
+<!--         	,'${share}' -->
+<!--         ) -->
+<!--         <selectKey keyProperty="idx" resultType="int" order="AFTER"> -->
+<!--         	SELECT LAST_INSERT_ID() -->
+<!--    		</selectKey> -->
+<!--     </insert> -->
+    
+<!--     <select id="selectProjectContentList" parameterType="paramMap" resultType="resultMap"> -->
+<!--     	SELECT  -->
+<!--     		* -->
+<!--     		,TEST_PROJECT_CONTENT.PROJECTNAME 					PROJECTNAME -->
+<!--     		,TEST_PROJECT_CONTENT.SHARE							PROJECTSHARE -->
+<!--     		,DATE_FORMAT(TEST_PROJECT_CONTENT.UDATE,'%Y-%m-%d')	PROJECTUDATE -->
+<!--     	FROM( -->
+<!--    		<if test="projectType != null and (projectType.equalsIgnoreCase('image') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,NULL AS THUMBNAIL -->
+<!-- 		    	,NULL AS ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoPhoto' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_IMAGE_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and projectType.equalsIgnoreCase('both')"> -->
+<!-- 	  		UNION -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and (projectType.equalsIgnoreCase('video') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,THUMBNAIL -->
+<!-- 		    	,ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoVideo' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_VIDEO_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    ) CONTENT_TABLE -->
+<!-- 	    LEFT JOIN TEST_PROJECT_CONTENT ON TEST_PROJECT_CONTENT.IDX = CONTENT_TABLE.PROJECTIDX  -->
+<!-- 	    WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		TEST_PROJECT_CONTENT.ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		TEST_PROJECT_CONTENT.SHARE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			TEST_PROJECT_CONTENT.SHARE = 2 AND '${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND  -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+	    	
+<!-- 	    <if test="projectIdx != null"> -->
+<!-- 	    	AND TEST_PROJECT_CONTENT.IDX = ${projectIdx} -->
+<!-- 	    </if> -->
+<!-- 	    <choose> -->
+<!-- 			<when test="pageNum != null and pageNum == 1"> -->
+<!-- 				ORDER BY TEST_PROJECT_CONTENT.IDX, TEST_PROJECT_CONTENT.UDATE DESC LIMIT ${contentNum} -->
+<!-- 			</when> -->
+<!-- 			<otherwise> -->
+<!-- 				ORDER BY TEST_PROJECT_CONTENT.IDX, TEST_PROJECT_CONTENT.UDATE DESC LIMIT ${contentNum} OFFSET ${offset} -->
+<!-- 			</otherwise> -->
+<!-- 		</choose> -->
+<!--     </select> -->
+    
+<!--     <select id="selectProjectContentListLen" parameterType="paramMap" resultType="resultMap"> -->
+<!--     	SELECT  -->
+<!--     		COUNT(*) TOTAL_CNT -->
+<!--     	FROM( -->
+<!--    		<if test="projectType != null and (projectType.equalsIgnoreCase('image') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,NULL AS THUMBNAIL -->
+<!-- 		    	,NULL AS ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoPhoto' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_IMAGE_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and projectType.equalsIgnoreCase('both')"> -->
+<!-- 	  		UNION -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and (projectType.equalsIgnoreCase('video') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,THUMBNAIL -->
+<!-- 		    	,ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoVideo' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_VIDEO_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    ) CONTENT_TABLE -->
+<!-- 	    LEFT JOIN TEST_PROJECT_CONTENT ON TEST_PROJECT_CONTENT.IDX = CONTENT_TABLE.PROJECTIDX  -->
+<!-- 	    WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		TEST_PROJECT_CONTENT.ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		TEST_PROJECT_CONTENT.SHARE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			TEST_PROJECT_CONTENT.SHARE = 2 AND '${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND  -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+	    	
+<!-- 	    <if test="projectIdx != null"> -->
+<!-- 	    	AND TEST_PROJECT_CONTENT.IDX = ${projectIdx} -->
+<!-- 	    </if> -->
+<!--     </select> -->
+    
+<!--     <select id="selectProjectContentList" parameterType="paramMap" resultType="resultMap"> -->
+<!--     	SELECT  -->
+<!--     		* -->
+<!--     		,TEST_PROJECT_CONTENT.PROJECTNAME 					PROJECTNAME -->
+<!--     		,TEST_PROJECT_CONTENT.SHARE							PROJECTSHARE -->
+<!--     		,DATE_FORMAT(TEST_PROJECT_CONTENT.UDATE,'%Y-%m-%d')	PROJECTUDATE -->
+<!--     	FROM( -->
+<!--    		<if test="projectType != null and (projectType.equalsIgnoreCase('image') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,NULL AS THUMBNAIL -->
+<!-- 		    	,NULL AS ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoPhoto' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_IMAGE_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and projectType.equalsIgnoreCase('both')"> -->
+<!-- 	  		UNION -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and (projectType.equalsIgnoreCase('video') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,THUMBNAIL -->
+<!-- 		    	,ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoVideo' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_VIDEO_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    ) CONTENT_TABLE -->
+<!-- 	    LEFT JOIN TEST_PROJECT_CONTENT ON TEST_PROJECT_CONTENT.IDX = CONTENT_TABLE.PROJECTIDX  -->
+<!-- 	    WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		TEST_PROJECT_CONTENT.ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		TEST_PROJECT_CONTENT.SHARE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			TEST_PROJECT_CONTENT.SHARE = 2 AND '${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND  -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+	    	
+<!-- 	    <if test="projectIdx != null"> -->
+<!-- 	    	AND TEST_PROJECT_CONTENT.IDX = ${projectIdx} -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectGroup != null and projectGroup.equalsIgnoreCase('Y')"> -->
+<!-- 	   		GROUP BY -->
+<!-- 	    		TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    </if> -->
+<!-- 	    <choose> -->
+<!-- 			<when test="pageNum != null and pageNum == 1"> -->
+<!-- 				ORDER BY TEST_PROJECT_CONTENT.IDX, TEST_PROJECT_CONTENT.UDATE DESC LIMIT ${contentNum} -->
+<!-- 			</when> -->
+<!-- 			<when test="projectGroup != null and projectGroup.equalsIgnoreCase('Y')"> -->
+<!-- 				ORDER BY TEST_PROJECT_CONTENT.IDX, TEST_PROJECT_CONTENT.UDATE DESC -->
+<!-- 			</when> -->
+<!-- 			<otherwise> -->
+<!-- 				ORDER BY TEST_PROJECT_CONTENT.IDX, TEST_PROJECT_CONTENT.UDATE DESC LIMIT ${contentNum} OFFSET ${offset} -->
+<!-- 			</otherwise> -->
+<!-- 		</choose> -->
+<!--     </select> -->
+    
+<!--     <select id="selectProjectContentListLen" parameterType="paramMap" resultType="resultMap"> -->
+<!--     	SELECT  -->
+<!--     		COUNT(*) TOTAL_CNT -->
+<!--     	FROM( -->
+<!--    		<if test="projectType != null and (projectType.equalsIgnoreCase('image') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,NULL AS THUMBNAIL -->
+<!-- 		    	,NULL AS ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoPhoto' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_IMAGE_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and projectType.equalsIgnoreCase('both')"> -->
+<!-- 	  		UNION -->
+<!-- 	    </if> -->
+<!-- 	    <if test="projectType != null and (projectType.equalsIgnoreCase('video') or projectType.equalsIgnoreCase('both'))"> -->
+<!-- 		    SELECT -->
+<!-- 		    	 ID -->
+<!-- 		    	,TITLE -->
+<!-- 		    	,CONTENT -->
+<!-- 		    	,FILENAME -->
+<!-- 		    	,DATE_FORMAT(UDATE,'%Y-%m-%d') U_DATE -->
+<!-- 		    	,IDX -->
+<!-- 		    	,TABNAME -->
+<!-- 		    	,LATITUDE -->
+<!-- 		    	,LONGITUDE -->
+<!-- 		    	,THUMBNAIL -->
+<!-- 		    	,ORIGINNAME -->
+<!-- 		    	,PROJECTIDX -->
+<!-- 		    	,'GeoVideo' AS DATAKIND -->
+<!-- 		    FROM -->
+<!-- 		    	TEST_VIDEO_CONTENT -->
+<!-- 	    </if> -->
+<!-- 	    ) CONTENT_TABLE -->
+<!-- 	    LEFT JOIN TEST_PROJECT_CONTENT ON TEST_PROJECT_CONTENT.IDX = CONTENT_TABLE.PROJECTIDX  -->
+<!-- 	    WHERE -->
+<!-- 	    	1 = 1 -->
+<!-- 	    AND -->
+<!-- 	    	( -->
+<!-- 	    		TEST_PROJECT_CONTENT.ID = '${loginId}'  -->
+<!-- 	    	OR  -->
+<!-- 	    		TEST_PROJECT_CONTENT.SHARE = 1 -->
+<!-- 	    	OR  -->
+<!-- 	    		( -->
+<!-- 	    			TEST_PROJECT_CONTENT.SHARE = 2  -->
+<!-- 	    		AND  -->
+<!-- 	    			'${loginId}' =  -->
+<!-- 	    			( -->
+<!-- 	    				SELECT  -->
+<!-- 	    					ID  -->
+<!-- 	    				FROM  -->
+<!-- 	    					TEST_GEOCMS_SHARE  -->
+<!-- 	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID -->
+<!-- 	    				WHERE  -->
+<!-- 	    					SHAREKIND = 'GeoProject'  -->
+<!-- 	    				AND   -->
+<!-- 	    					SHAREIDX = TEST_PROJECT_CONTENT.IDX -->
+<!-- 	    			) -->
+<!-- 	    		) -->
+<!-- 	    	) -->
+	    	
+<!-- 	    <if test="projectIdx != null"> -->
+<!-- 	    	AND TEST_PROJECT_CONTENT.IDX = ${projectIdx} -->
+<!-- 	    </if> -->
+<!--     </select> -->
     
 </mapper>

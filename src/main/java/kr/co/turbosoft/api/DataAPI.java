@@ -535,7 +535,6 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-//	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{shareType}/{shareUser}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{projectIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveImageService(@RequestParam("callback") String callback
@@ -766,10 +765,9 @@ public class DataAPI  {
 						}else if("GeoPhoto".equals(type)){
 							resultList = dataDao.selectImageList(param);
 						}else if("GeoVideo".equals(type)){
-//							resultList = dataDao.selectImageList(param);
+
 						}
 					}
-//					resultList = dataDao.selectImageList(param);
 					
 					if(resultList != null && resultList.size() > 0){
 						HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(0);
@@ -790,13 +788,10 @@ public class DataAPI  {
 								}else if("GeoPhoto".equals(type)){
 									resultIntegerValue = dataDao.deleteImage(param);
 								}else if("GeoVideo".equals(type)){
-//									resultList = dataDao.selectImageList(param);
+
 								}
 							}
-							
-//							fileFull = tmpMap.get("FILEPATH") + "/" + tmpMap.get("FILENAME");
-							
-//							resultIntegerValue = dataDao.deleteImage(param);
+
 							if(resultIntegerValue == 1 && fileFull != null && !"".equals(fileFull)) {
 								File f = new File(fileFull);
 								
@@ -1506,11 +1501,6 @@ public class DataAPI  {
 								tmpMap.put("moveContent", String.valueOf(tmpMap.get("IDX")));
 								tmpMap.put("shareType", shareType);
 								resultIntegerValue = dataDao.updateImageMove(tmpMap);
-//								tmpMap.put("title", tmpMap.get("TITLE"));
-//								tmpMap.put("content", tmpMap.get("CONTENT"));
-//								tmpMap.put("tabName", tmpMap.get("TABNAME"));
-//								tmpMap.put("xmlData", tmpMap.get("XMLDATA"));
-//								resultIntegerValue = dataDao.updateImage(tmpMap);
 								
 								//공유 유저 삭제
 								imgTmp2 = new HashMap<String, Object>();
