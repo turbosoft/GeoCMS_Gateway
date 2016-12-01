@@ -535,6 +535,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
+//	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{shareType}/{shareUser}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{projectIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveImageService(@RequestParam("callback") String callback
@@ -765,9 +766,10 @@ public class DataAPI  {
 						}else if("GeoPhoto".equals(type)){
 							resultList = dataDao.selectImageList(param);
 						}else if("GeoVideo".equals(type)){
-
+//							resultList = dataDao.selectImageList(param);
 						}
 					}
+//					resultList = dataDao.selectImageList(param);
 					
 					if(resultList != null && resultList.size() > 0){
 						HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(0);
@@ -788,10 +790,13 @@ public class DataAPI  {
 								}else if("GeoPhoto".equals(type)){
 									resultIntegerValue = dataDao.deleteImage(param);
 								}else if("GeoVideo".equals(type)){
-
+//									resultList = dataDao.selectImageList(param);
 								}
 							}
-
+							
+//							fileFull = tmpMap.get("FILEPATH") + "/" + tmpMap.get("FILENAME");
+							
+//							resultIntegerValue = dataDao.deleteImage(param);
 							if(resultIntegerValue == 1 && fileFull != null && !"".equals(fileFull)) {
 								File f = new File(fileFull);
 								
@@ -1501,6 +1506,11 @@ public class DataAPI  {
 								tmpMap.put("moveContent", String.valueOf(tmpMap.get("IDX")));
 								tmpMap.put("shareType", shareType);
 								resultIntegerValue = dataDao.updateImageMove(tmpMap);
+//								tmpMap.put("title", tmpMap.get("TITLE"));
+//								tmpMap.put("content", tmpMap.get("CONTENT"));
+//								tmpMap.put("tabName", tmpMap.get("TABNAME"));
+//								tmpMap.put("xmlData", tmpMap.get("XMLDATA"));
+//								resultIntegerValue = dataDao.updateImage(tmpMap);
 								
 								//공유 유저 삭제
 								imgTmp2 = new HashMap<String, Object>();
@@ -1655,4 +1665,248 @@ public class DataAPI  {
 		
 		return callback + "(" + resultJSON.toString() + ")";
 	}
+	
+//	@RequestMapping(value = "/cms/getMyContents/{type}/{contentViewType}/{token}/{loginId}/{pageNum}/{contentNum}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+//	@ResponseBody
+//	public String getProjectGroupService(@RequestParam("callback") String callback
+//			, @PathVariable("type") String type
+//			, @PathVariable("contentViewType") String contentViewType
+//			, @PathVariable("token") String token
+//			, @PathVariable("loginId") String loginId
+//			, @PathVariable("pageNum") String pageNum
+//			, @PathVariable("contentNum") String contentNum
+//			, Model model, HttpServletRequest request) {
+//		JSONObject resultJSON = new JSONObject();
+//		
+//		param = new HashMap<String, String>();
+//		result = new HashMap<String, String>();
+//		
+//		HashMap<String, String> boardLen = new HashMap<String, String>();
+//		HashMap<String, String> imageLen = new HashMap<String, String>();
+//		HashMap<String, String> videoLen = new HashMap<String, String>();
+//		
+//		List<Object> resultList2  = new ArrayList<Object>();
+//		
+//		//token
+//		param.clear();
+//		param.put("token", token);
+//		result = userDao.selectUid(param);
+//		
+//		if(result != null){
+//			pageNum = pageNum.replace("&nbsp", "");
+//			contentNum = contentNum.replace("&nbsp", "");
+//			
+//			if(type != null && !"".equals(type)){
+//				param.put("loginId", loginId);
+//				param.put("pageNum", pageNum);
+//				param.put("contentNum", contentNum);
+//				
+//				if("board".equals(type) || "first".equals(type)){
+//					resultList = dataDao.selectBoardList(param);
+//					boardLen = dataDao.selectBoardListLen(param);
+//				}
+//				if("image".equals(type) || ("first".equals(type) && ("Both".equals(contentViewType) || "Image".equals(contentViewType)))){
+//					resultList2 = dataDao.selectImageList(param);
+//					imageLen = dataDao.selectImageListLen(param);
+//					
+//					if(resultList != null && resultList.size() > 0){
+//						ListUtils.union(resultList, resultList2);
+//					}else{
+//						resultList = resultList2;
+//					}
+//				}
+////				if("video".equals(type) || ("first".equals(type) && ("Both".equals(contentViewType) || "Video".equals(contentViewType)))){
+////					resultList2 = dataDao.selectImageList(param);
+////					imageLen = dataDao.selectImageListLen(param);
+////					
+////					if(resultList != null && resultList.size() > 0){
+////						ListUtils.union(resultList, resultList2);
+////					}else{
+////						resultList = resultList2;
+////					}
+////				}
+//			}
+//			
+//			param.put("type", type);
+//			param.put("contentViewType", contentViewType);
+//			param.put("loginId", loginId);
+//			param.put("pageNum", pageNum);
+//			param.put("contentNum", contentNum);
+//			
+//			if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
+//				int tmpPage = Integer.valueOf(pageNum);
+//				int tmpContent = Integer.valueOf(contentNum);
+//				int offset = tmpContent * (tmpPage-1);
+//				param.put("offset", String.valueOf(offset));
+//			}
+//			resultList = dataDao.selectContentList(param);
+//			result = dataDao.selectContentListLen(param);
+//			
+//			if(resultList != null && resultList.size() != 0) {
+//				resultJSON.put("Code", 100);
+//				resultJSON.put("Message", Message.code100);
+//				resultJSON.put("Data", JSONArray.fromObject(resultList));
+//				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+//			}
+//			else {
+//				resultJSON.put("Code", 200);
+//				resultJSON.put("Message", Message.code200);
+//			}
+//		}else{
+//			resultJSON.put("Code", 203);
+//			resultJSON.put("Message", Message.code203);
+//		}
+//		
+//		return callback + "(" + resultJSON.toString() + ")";
+//	}
+	
+//	@RequestMapping(value = "/cms/getProjectGroup/{token}/{loginId}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+//	@ResponseBody
+//	public String getProjectGroupService(@RequestParam("callback") String callback
+//			, @PathVariable("token") String token
+//			, @PathVariable("loginId") String loginId
+//			, Model model, HttpServletRequest request) {
+//		JSONObject resultJSON = new JSONObject();
+//		
+//		param = new HashMap<String, String>();
+//		result = new HashMap<String, String>();
+//		
+//		//token
+//		param.clear();
+//		param.put("token", token);
+//		result = userDao.selectUid(param);
+//				
+//		if(result != null){
+//			param.put("loginId", loginId);
+//			resultList = dataDao.selectProjectList(param);
+//			
+////			param.put("projectType", projectType);
+////			param.put("projectGroup", "Y");
+////			resultList = dataDao.selectProjectContentList(param);
+//		}
+//		
+//		if(resultList != null && resultList.size() != 0) {
+//			resultJSON.put("Code", 100);
+//			resultJSON.put("Message", Message.code100);
+//			resultJSON.put("Data", JSONArray.fromObject(resultList));
+//		}
+//		else {
+//			resultJSON.put("Code", 200);
+//			resultJSON.put("Message", Message.code200);
+//		}
+//		
+//		return callback + "(" + resultJSON.toString() + ")";
+//	}
+//	
+//	@RequestMapping(value = "/cms/getProject/{token}/{loginId}/{projectType}/{projectIdx}/{pageNum}/{contentNum}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+//	@ResponseBody
+//	public String getProjectGroupService(@RequestParam("callback") String callback
+//			, @PathVariable("token") String token
+//			, @PathVariable("loginId") String loginId
+//			, @PathVariable("projectType") String projectType
+//			, @PathVariable("projectIdx") String projectIdx
+//			, @PathVariable("pageNum") String pageNum
+//			, @PathVariable("contentNum") String contentNum
+//			, Model model, HttpServletRequest request) {
+//		JSONObject resultJSON = new JSONObject();
+//		
+//		param = new HashMap<String, String>();
+//		result = new HashMap<String, String>();
+//		
+//		//token
+//		param.clear();
+//		param.put("token", token);
+//		result = userDao.selectUid(param);
+//				
+//		if(result != null){
+//			pageNum = pageNum.replace("&nbsp", "");
+//			contentNum = contentNum.replace("&nbsp", "");
+//			
+//			param.put("loginId", loginId);
+//			param.put("projectType", projectType);
+//			param.put("projectIdx", projectIdx);
+//			param.put("pageNum", pageNum);
+//			param.put("contentNum", contentNum);
+//			
+//			if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
+//				int tmpPage = Integer.valueOf(pageNum);
+//				int tmpContent = Integer.valueOf(contentNum);
+//				int offset = tmpContent * (tmpPage-1);
+//				param.put("offset", String.valueOf(offset));
+//			}
+//			resultList = dataDao.selectProjectContentList(param);
+//			result = dataDao.selectProjectContentListLen(param);
+//		}
+//		
+//		if(resultList != null && resultList.size() != 0) {
+//			resultJSON.put("Code", 100);
+//			resultJSON.put("Message", Message.code100);
+//			resultJSON.put("Data", JSONArray.fromObject(resultList));
+//			resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+//		}
+//		else {
+//			resultJSON.put("Code", 200);
+//			resultJSON.put("Message", Message.code200);
+//		}
+//		
+//		return callback + "(" + resultJSON.toString() + ")";
+//	}
+	
+//	@RequestMapping(value = "/cms/saveProject/{token}/{loginId}/{projectName}/{share}/{shareUserTxt}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+//	@ResponseBody
+//	public String saveProjectService(@RequestParam("callback") String callback
+//			, @PathVariable("token") String token
+//			, @PathVariable("loginId") String loginId
+//			, @PathVariable("projectName") String projectName
+//			, @PathVariable("share") String share
+//			, @PathVariable("shareUserTxt") String shareUserTxt
+//			, Model model, HttpServletRequest request) {
+//		JSONObject resultJSON = new JSONObject();
+//		param = new HashMap<String, String>();
+//		result = new HashMap<String, String>();
+//		
+//		//token
+//		param.clear();
+//		param.put("token", token);
+//		result = userDao.selectUid(param);
+//		
+//		if(result != null){
+//			//update token time
+//			param.put("uid", String.valueOf(result.get("UID")));
+//			resultIntegerValue = userDao.updateTokenTime(param);
+//			
+//			if(shareUserTxt != null && !"".equals(shareUserTxt) && !"null".equals(shareUserTxt)){
+//				shareUserTxt = shareUserTxt.replaceAll("&nbsp","/");
+//			}
+//			
+//			param.clear();
+//			param.put("loginId", loginId);
+//			param.put("projectName", projectName);
+//			param.put("share", share);
+//			resultIntegerValue = dataDao.insertProject(param);
+//			
+//			if(share != null && "2".equals(share)){
+//				HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+//				
+//				String[] shareTList = shareUserTxt.split(",");
+//				tmpParam.put("shareTList", shareTList);
+//				tmpParam.put("shareIdx", param.get("idx"));
+//				tmpParam.put("shareKind", "GeoProject");
+//				resultIntegerValue = dataDao.insertShare(tmpParam);
+//			}
+//			
+//			if(resultIntegerValue > 1) {
+//				resultJSON.put("Code", 100);
+//				resultJSON.put("Message", Message.code100);
+//			}else{
+//				resultJSON.put("Code", 300);
+//				resultJSON.put("Message", Message.code300);
+//			}
+//		}else{
+//			resultJSON.put("Code", 203);
+//			resultJSON.put("Message", Message.code203);
+//		}
+//		
+//		return callback + "(" + resultJSON.toString() + ")";
+//	}
 }
