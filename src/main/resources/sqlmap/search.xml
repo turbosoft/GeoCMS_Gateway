@@ -25,7 +25,7 @@
 					,'GeoCMS' AS DATAKIND
 					,SHARETYPE
 				FROM
-					TEST_BOARD_CONTENT
+					GEOCMS_BOARD_CONTENT
 				WHERE
 					1 = 1
 				<if test="check != null and (check.equalsIgnoreCase('content') or check.equalsIgnoreCase('all'))">
@@ -58,7 +58,7 @@
 					,'GeoPhoto' AS DATAKIND
 					,SHARETYPE
 				FROM
-					TEST_IMAGE_CONTENT
+					GEOCMS_IMAGE_CONTENT
 				WHERE
 					1 = 1
 		        <if test="check != null and check.equalsIgnoreCase('content')">
@@ -103,7 +103,7 @@
 					,'GeoVideo' AS DATAKIND
 					,SHARETYPE
 				FROM
-					TEST_VIDEO_CONTENT
+					GEOCMS_VIDEO_CONTENT
 				WHERE
 					1 = 1
 				<if test="check != null and check.equalsIgnoreCase('content')">
@@ -143,8 +143,8 @@
 	    				SELECT 
 	    					ID 
 	    				FROM 
-	    					TEST_GEOCMS_SHARE 
-	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = TEST_GEOCMS_SHARE.UID
+	    					GEOCMS_SHARE 
+	    				LEFT JOIN GEOCMS_USER ON GEOCMS_USER.UID = GEOCMS_SHARE.UID
 	    				WHERE 
 	    					SHAREKIND = TMPTABLE.DATAKIND
 	    				AND
