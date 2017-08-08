@@ -216,7 +216,7 @@
 	        	 GEOCMS_USER.UID
 	        	,GEOCMS_USER.ID
 	        	<if test="userArr != null">
-	        		,TEST_GEOCMS_SHARE.SHAREEDIT
+	        		,GEOCMS_SHARE.SHAREEDIT
 	        	</if>
 	        	<if test="userArr == null">
 	        		,NULL AS SHAREEDIT
@@ -224,7 +224,7 @@
 	        FROM
 	        	GEOCMS_USER
 	        <if test="userArr != null">
-	       		JOIN TEST_GEOCMS_SHARE ON TEST_GEOCMS_SHARE.UID = GEOCMS_USER.UID
+	       		JOIN GEOCMS_SHARE ON GEOCMS_SHARE.UID = GEOCMS_USER.UID
 	        </if>
 	        WHERE
 	        	1 = 1
@@ -298,7 +298,7 @@
 	        	 GEOCMS_USER.UID
 	        	,GEOCMS_USER.ID
 	        	<if test="userArr != null">
-	        		,TEST_GEOCMS_SHARE.SHAREEDIT
+	        		,GEOCMS_SHARE.SHAREEDIT
 	        	</if>
 	        	<if test="userArr == null">
 	        		,NULL AS SHAREEDIT
@@ -306,7 +306,7 @@
 	        FROM
 	        	GEOCMS_USER
 	        <if test="userArr != null">
-	       		JOIN TEST_GEOCMS_SHARE ON TEST_GEOCMS_SHARE.UID = GEOCMS_USER.UID
+	       		JOIN GEOCMS_SHARE ON GEOCMS_SHARE.UID = GEOCMS_USER.UID
 	        </if>
 	        WHERE
 	        	1 = 1
@@ -344,7 +344,7 @@
     </select>
     
     <insert id="insertShare" parameterType="paramMap">
-        INSERT INTO TEST_GEOCMS_SHARE
+        INSERT INTO GEOCMS_SHARE
         (
         	 UID
         	,SHAREIDX
@@ -365,7 +365,7 @@
     <delete id="deleteShare">
     	DELETE
     		FROM
-    			TEST_GEOCMS_SHARE
+    			GEOCMS_SHARE
     		WHERE
     			1 = 1
     		AND
@@ -390,7 +390,7 @@
     		,TGS.SHAREEDIT
     		,GU.ID
     	FROM
-    		TEST_GEOCMS_SHARE TGS
+    		GEOCMS_SHARE TGS
     	LEFT JOIN GEOCMS_USER GU ON GU.UID = TGS.UID
     	WHERE
     		1 = 1
@@ -405,7 +405,7 @@
     </select>
     
     <insert id="insertShareFormProject" parameterType="paramMap">
-        INSERT INTO TEST_GEOCMS_SHARE
+        INSERT INTO GEOCMS_SHARE
         (
         	 UID
         	,SHAREIDX
@@ -419,7 +419,7 @@
         	,'${shareKind}'
         	,SHAREEDIT 
         FROM
-        	TEST_GEOCMS_SHARE
+        	GEOCMS_SHARE
         WHERE
         	1 = 1
         AND
@@ -431,7 +431,7 @@
     
     <update id="updateShareEdit" parameterType="paramMap">
     	UPDATE
-    		TEST_GEOCMS_SHARE
+    		GEOCMS_SHARE
     	SET
     		SHAREEDIT = '${editType}'
     	WHERE
