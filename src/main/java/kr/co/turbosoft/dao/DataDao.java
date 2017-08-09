@@ -33,6 +33,8 @@ public interface DataDao {
 	public HashMap<String, String> selectVideoListLen(HashMap<String, String> param);
 	public int insertVideo(HashMap<String, String> param);
 	public int updateVideo(HashMap<String, String> param);
+	public int deleteVideo(HashMap<String, String> param);
+	public int updateVideoMove(HashMap<String, String> param);
 	
 	public List<Object> selectProjectList(HashMap<String, String> param);
 	public List<Object> selectProjectContentList(HashMap<String, String> param);
