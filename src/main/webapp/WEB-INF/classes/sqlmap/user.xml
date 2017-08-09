@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="user">
+    
+    <insert id="insertUser" parameterType="paramMap">
+        INSERT INTO
+        	GEOCMS_USER
+        	(
+        		  ID
+        		 ,PASSWORD
+        		 ,TYPE
+        		 ,EMAIL
+        		 ,REG_DATE
+       		)
+       	VALUES
+        	(
+        		 '${id}'
+        		,'${pass}'
+        		,'MODIFY'
+        		,'${email}'
+        		,NOW()
+       		)
+        <selectKey keyProperty="uid" resultType="long" order="AFTER">
+            SELECT LAST_INSERT_ID() as uid
+        </selectKey>
+    </insert>
+    
+    <update id="updateUser" parameterType="paramMap">
+    	UPDATE
+    		GEOCMS_USER
+    	SET
+    		TYPE		= '${type}'
+    		<if test="!typeChange.equalsIgnoreCase('Y')">
+    			,PASS		= '${pass}'
+        		,EMAIL		= '${email}'
+        		,REG_DATE	= NOW()
+        	</if>
+        WHERE 
+        	1 = 1
+        AND
+        	ID = '${id}'
+        	
+    </update>
+    
+    <select id="selectUser" parameterType="paramMap" resultType="resultMap">
+        SELECT
+        	*
+        FROM
+        	GEOCMS_USER
+        WHERE
+        	1 = 1
+        	<if test="textType != null">
+        		<if test="textType.equalsIgnoreCase('ID')">
+        			AND
+        				ID = '${textVal}'
+        		</if>
+        		<if test="textType.equalsIgnoreCase('EMAIL')">
+        			AND
+        				EMAIL = '${textVal}'
+        		</if>        		
+        	</if>
+        	
+        	<if test="id != null">
+        		AND
+        			ID = '${id}'
+        	</if>
+        	<if test="pass != null">
+        		AND
+        			PASSWORD = '${pass}'
+        	</if>
+        	<if test="email != null">
+        		AND
+        			EMAIL = '${email}'
+        	</if>
+    </select>
+    
+    <select id="selectUid" parameterType="paramMap" resultType="resultMap">
+    	<![CDATA[
+    	SELECT
+        	  A.UID
+        	 ,B.TYPE
+       	FROM TOKEN A
+       	JOIN GEOCMS_USER B
+       	  ON A.UID = B.UID
+       	WHERE
+       		A.AES = '${token}'
+       		AND A.DATE > NOW()
+       	]]>
+    </select>
+    
+    <select id="selectAllUser" parameterType="paramMap" resultType="resultMap">
+        SELECT
+        	 *
+        	 ,DATE_FORMAT(REG_DATE,'%Y-%m-%d') R_DATE
+        FROM
+        	GEOCMS_USER
+        WHERE
+        	1 = 1
+        	<if test="searchType != null">
+        AND
+        		<choose>
+        			<when test="searchType.equalsIgnoreCase('REG_DATE')">
+        				<if test="sDate != null">
+        					DATE_FORMAT(REG_DATE,'%Y%m%d') >= '${sDate}'
+		        		</if>
+		        		<if test="sDate != null and eDate != null">
+		        			AND
+		        		</if>
+		        		<if test="eDate != null">
+		        			<![CDATA[ DATE_FORMAT(REG_DATE,'%Y%m%d') <= '${eDate}' ]]>
+		        		</if>
+        			</when>
+        			<otherwise>
+        				${searchType} LIKE '%${searchText}%'
+        			</otherwise>
+        		</choose>
+        	</if>
+        	
+        	<choose>
+        		<when test="pageNum != null and pageNum.equalsIgnoreCase('1')">
+        			ORDER BY
+        				REG_DATE DESC LIMIT ${selUserNum}
+        		</when>
+        		<otherwise>
+        			ORDER BY
+        				REG_DATE DESC LIMIT ${selUserNum} OFFSET ${offset}
+        		</otherwise>
+        	</choose>
+    </select>
+    
+    <select id="selectAllUserLen" parameterType="paramMap" resultType="resultMap">
+        SELECT
+        	 COUNT(*) AS TOTAL_CNT
+        FROM
+        	GEOCMS_USER
+        WHERE
+        	1 = 1
+        	<if test="searchType != null">
+        AND
+        		<choose>
+        			<when test="searchType.equalsIgnoreCase('REG_DATE')">
+        				<if test="sDate != null">
+		        			REPLACE(REG_DATE,'-','') >= '${sDate}'
+		        		</if>
+		        		<if test="sDate != null and eDate != null">
+		        			AND
+		        		</if>
+		        		<if test="eDate != null">
+		        			<![CDATA[ REPLACE(REG_DATE,'-','') <= '${sDate}']]>
+		        		</if>
+        			</when>
+        			<otherwise>
+        				${searchType} LIKE '%${searchText}%'
+        			</otherwise>
+        		</choose>
+        	</if>
+    </select>
+    
+    <insert id="insertToken" parameterType="paramMap">
+        INSERT INTO TOKEN(
+        	 UID
+        	,AES
+        	,DATE
+        )
+        VALUES(
+        	 ${uid}
+        	,NULL
+        	,NULL
+        )
+    </insert>
+    
+    <update id="updateToken" parameterType="paramMap">
+        UPDATE
+        	TOKEN
+		SET
+			  AES = '${aes}'
+			 ,DATE = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+		WHERE
+			UID = '${uid}'
+    </update>
+    
+    <update id="updateTokenTime" parameterType="paramMap">
+        UPDATE
+        	TOKEN
+		SET
+			DATE = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+		WHERE
+			UID = ${uid}
+    </update>
+    
+    <select id="selectShareUser" parameterType="paramMap" resultType="resultMap">
+    	<if test="addArr != null">
+    		SELECT
+	        	 GEOCMS_USER.UID
+	        	,GEOCMS_USER.ID
+	        	,NULL AS SHAREEDIT
+	        FROM
+	        	GEOCMS_USER
+	        WHERE
+	        	1 = 1
+	        <if test="searchText != null and !searchText.equalsIgnoreCase('')">
+        		AND
+        			GEOCMS_USER.ID = '${searchText}'
+        	</if>
+	        AND
+        		 GEOCMS_USER.UID IN(
+         		<foreach collection="addArr" item="addArr" separator=" , ">
+         			${addArr}
+         		</foreach>
+         		)
+         	UNION
+    	</if>
+    	
+        (SELECT
+	        	 GEOCMS_USER.UID
+	        	,GEOCMS_USER.ID
+	        	<if test="userArr != null">
+	        		,GEOCMS_SHARE.SHAREEDIT
+	        	</if>
+	        	<if test="userArr == null">
+	        		,NULL AS SHAREEDIT
+	        	</if>
+	        FROM
+	        	GEOCMS_USER
+	        <if test="userArr != null">
+	       		JOIN GEOCMS_SHARE ON GEOCMS_SHARE.UID = GEOCMS_USER.UID
+	        </if>
+	        WHERE
+	        	1 = 1
+        <if test="(searchText == null or searchText.equalsIgnoreCase('')) and userArr == null">
+        	AND 
+        		1 = 0
+        </if>
+        <if test="searchText != null and !searchText.equalsIgnoreCase('')">
+        	AND
+        		GEOCMS_USER.ID = '${searchText}'
+        </if>
+        <if test="searchOff != null and searchOff.equalsIgnoreCase('Y')">
+        	AND 
+        		1 = 0
+        </if>
+        <if test="userArr != null">
+        	AND
+        		 GEOCMS_USER.UID IN(
+         		<foreach collection="userArr" item="userArr" separator=" , ">
+         			${userArr}
+         		</foreach>
+         		)
+         	AND
+         		SHAREIDX = '${shareIdx}'
+        </if>
+        <if test="removeArr != null">
+        	AND
+        		 GEOCMS_USER.UID NOT IN(
+         		<foreach collection="removeArr" item="removeArr" separator=" , ">
+         			${removeArr}
+         		</foreach>
+         		)
+        </if>
+        <choose>
+        	<when test="pageNum != null and pageNum.equalsIgnoreCase('1')">
+        		ORDER BY
+        			GEOCMS_USER.ID ${orderText}
+        			) 
+        		LIMIT ${selUserNum}
+        	</when>
+        	<otherwise>
+        		ORDER BY
+        			GEOCMS_USER.ID ${orderText}
+        			) 
+        		LIMIT ${selUserNum} OFFSET ${offset}
+        	</otherwise>
+        </choose>
+    </select>
+    
+    <select id="selectShareUserLen" parameterType="paramMap" resultType="resultMap">
+    SELECT COUNT(*) TOTAL_CNT FROM (
+        <if test="addArr != null">
+    		SELECT
+	        	 GEOCMS_USER.UID
+	        	,GEOCMS_USER.ID
+	        	,NULL AS SHAREEDIT
+	        FROM
+	        	GEOCMS_USER
+	        WHERE
+	        	1 = 1
+	        AND
+        		 GEOCMS_USER.UID IN(
+         		<foreach collection="addArr" item="addArr" separator=" , ">
+         			${addArr}
+         		</foreach>
+         		)
+         	UNION
+    	</if>
+    	
+        SELECT
+	        	 GEOCMS_USER.UID
+	        	,GEOCMS_USER.ID
+	        	<if test="userArr != null">
+	        		,GEOCMS_SHARE.SHAREEDIT
+	        	</if>
+	        	<if test="userArr == null">
+	        		,NULL AS SHAREEDIT
+	        	</if>
+	        FROM
+	        	GEOCMS_USER
+	        <if test="userArr != null">
+	       		JOIN GEOCMS_SHARE ON GEOCMS_SHARE.UID = GEOCMS_USER.UID
+	        </if>
+	        WHERE
+	        	1 = 1
+        <if test="(searchText == null or searchText.equalsIgnoreCase('')) and userArr == null">
+        	AND 
+        		1 = 0
+        </if>
+        <if test="searchText != null and !searchText.equalsIgnoreCase('')">
+        	AND
+        		ID = '${searchText}'
+        </if>
+        <if test="searchOff != null and searchOff.equalsIgnoreCase('Y')">
+        	AND 
+        		1 = 0
+        </if>
+        <if test="userArr != null">
+        	AND
+        		 GEOCMS_USER.UID IN(
+         		<foreach collection="userArr" item="userArr" separator=" , ">
+         			${userArr}
+         		</foreach>
+         		)
+         	AND
+         		SHAREIDX = '${shareIdx}'
+        </if>
+        <if test="removeArr != null">
+        	AND
+        		 GEOCMS_USER.UID NOT IN(
+         		<foreach collection="removeArr" item="removeArr" separator=" , ">
+         			${removeArr}
+         		</foreach>
+         		)
+        </if>
+        )CMS
+    </select>
+    
+    <insert id="insertShare" parameterType="paramMap">
+        INSERT INTO GEOCMS_SHARE
+        (
+        	 UID
+        	,SHAREIDX
+        	,SHAREKIND
+        	,SHAREEDIT
+        )
+        VALUES
+        <foreach collection="shareTList" item="shareTList" separator=" , ">
+        	(
+        	  ${shareTList}
+        	, ${shareIdx}
+        	,'${shareKind}'
+        	,'${shareEdit}'
+        	)
+        </foreach>
+    </insert>
+    
+    <delete id="deleteShare">
+    	DELETE
+    		FROM
+    			GEOCMS_SHARE
+    		WHERE
+    			1 = 1
+    		AND
+    			SHAREIDX = ${shareIdx}
+    		<if test="shareTList != null">
+    			AND UID IN (
+					<foreach collection="shareTList" item="shareTList" separator=" , ">
+			        	 ${shareTList}
+			        </foreach>
+			        )
+    		</if>
+    		AND
+    			SHAREKIND = '${shareKind}'
+    </delete>
+    
+    <select id="selectShareUserList" parameterType="paramMap" resultType="resultMap">
+    	SELECT
+    		 TGS.IDX
+    		,TGS.UID
+    		,TGS.SHAREIDX
+    		,TGS.SHAREKIND
+    		,TGS.SHAREEDIT
+    		,GU.ID
+    	FROM
+    		GEOCMS_SHARE TGS
+    	LEFT JOIN GEOCMS_USER GU ON GU.UID = TGS.UID
+    	WHERE
+    		1 = 1
+    	AND
+    		TGS.SHAREKIND = '${shareKind}'
+    	AND
+    		TGS.SHAREIDX = ${shareIdx}
+    	<if test="editUserChk != null and editUserChk.equalsIgnoreCase('Y')">
+    		AND
+    			TGS.UID = (SELECT UID FROM GEOCMS_USER WHERE id = '${loginId}')
+    	</if>
+    </select>
+    
+    <insert id="insertShareFormProject" parameterType="paramMap">
+        INSERT INTO GEOCMS_SHARE
+        (
+        	 UID
+        	,SHAREIDX
+        	,SHAREKIND
+        	,SHAREEDIT
+        )
+        (
+        SELECT 
+        	 UID
+        	, ${shareIdx}
+        	,'${shareKind}'
+        	,SHAREEDIT 
+        FROM
+        	GEOCMS_SHARE
+        WHERE
+        	1 = 1
+        AND
+        	SHAREIDX = ${projectIdx}
+        AND 
+        	SHAREKIND = 'GeoProject'
+        )
+    </insert>
+    
+    <update id="updateShareEdit" parameterType="paramMap">
+    	UPDATE
+    		GEOCMS_SHARE
+    	SET
+    		SHAREEDIT = '${editType}'
+    	WHERE
+    		1 = 1
+    	AND
+    		SHAREIDX = ${shareIdx}
+    	AND
+    		SHAREKIND = '${shareKind}'
+    	AND
+    		UID IN (
+    			<foreach collection="editList" item="editList" separator=" , ">
+			    	${editList}
+			    </foreach>
+    		)
+    </update>
+     
+</mapper>
