@@ -6,6 +6,8 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -231,7 +233,7 @@ public class UserAPI {
 	@ResponseBody
 	public String typeUpdateService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
-			, @PathVariable("data") List<HashMap<String,String>> data
+			, @PathVariable("data") String data
 			, Model model
 			, HttpServletRequest reqeust) throws Exception{
 		
@@ -245,10 +247,15 @@ public class UserAPI {
 		
 		if(result != null){
 			if("ADMIN".equals(result.get("TYPE"))){
-				if(data != null && data.size() > 0){
-					for(int i=0;i<data.size();i++){
-						if(data.get(i) != null){
-							resultIntegerValue = userDao.updateUser(data.get(i));
+				if(data != null && !"".equals(data) && !"null".equals(data)){
+					ObjectMapper m = new ObjectMapper();
+					List<HashMap<String, String>> saveList = m.readValue(data, new TypeReference<List<HashMap<String, String>>>() { });
+					for(int i=0;i<saveList.size();i++){
+						if(saveList.get(i) != null){
+							HashMap<String, String> tmpMap = new HashMap<String, String>();
+							tmpMap = saveList.get(i);
+							tmpMap.put("typeChange","Y");
+							resultIntegerValue = userDao.updateUser(tmpMap);
 							if(resultIntegerValue != 1) {
 								resultJSON.put("Code", 300);
 								resultJSON.put("Message", Message.code300);
@@ -259,6 +266,20 @@ public class UserAPI {
 					resultJSON.put("Code", 100);
 					resultJSON.put("Message", Message.code100);
 				}
+//				if(data != null && data.size() > 0){
+//					for(int i=0;i<data.size();i++){
+//						if(data.get(i) != null){
+//							resultIntegerValue = userDao.updateUser(data.get(i));
+//							if(resultIntegerValue != 1) {
+//								resultJSON.put("Code", 300);
+//								resultJSON.put("Message", Message.code300);
+//								break;
+//							}
+//						}
+//					}
+//					resultJSON.put("Code", 100);
+//					resultJSON.put("Message", Message.code100);
+//				}
 			}else{
 				resultJSON.put("Code", 500);
 				resultJSON.put("Message", Message.code500);
