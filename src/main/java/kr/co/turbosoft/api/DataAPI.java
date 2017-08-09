@@ -212,7 +212,7 @@ public class DataAPI  {
 				param.put("idx", idx);
 				param.put("token", token);
 				result = userDao.selectUid(param);
-				if(userDao.selectUid(param) != null){
+				if(result != null){
 					param.put("shareIdx", idx);
 					param.put("shareKind", "GeoCMS");
 					shareList = userDao.selectShareUserList(param);
@@ -244,7 +244,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/saveBorder/{token}/{loginId}/{title}/{content}/{files}/{filePath}/{tabName}/{idx}/{shareType}/{addShare}/{removeShare}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/saveBorder/{token}/{loginId}/{title}/{content}/{files}/{filePath}/{tabName}/{idx}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveBorderService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -258,6 +258,8 @@ public class DataAPI  {
 			, @PathVariable("shareType") String shareType
 			, @PathVariable("addShare") String addShare
 			, @PathVariable("removeShare") String removeShare
+			, @PathVariable("editYes") String editYes
+			, @PathVariable("editNo") String editNo
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
@@ -278,6 +280,8 @@ public class DataAPI  {
 			if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
 			if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
 			if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
+			if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
+			if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
 			
 			param.clear();
 			param.put("loginId", loginId);
@@ -299,6 +303,13 @@ public class DataAPI  {
 						tmpParam.put("shareIdx", param.get("idx"));
 						tmpParam.put("shareKind", "GeoCMS");
 						resultIntegerValue = userDao.insertShare(tmpParam);
+						
+						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+							String[] editList = editYes.split(",");
+							tmpParam.put("editType", "Y");
+							tmpParam.put("editList", editList);
+							resultIntegerValue = userDao.updateShareEdit(tmpParam);
+						}
 					}
 				}
 			}
@@ -318,7 +329,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateBorder/{token}/{loginId}/{title}/{content}/{files}/{filePath}/{tabName}/{idx}/{shareType}/{addShare}/{removeShare}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateBorder/{token}/{loginId}/{title}/{content}/{files}/{filePath}/{tabName}/{idx}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateBorderService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -332,6 +343,8 @@ public class DataAPI  {
 			, @PathVariable("shareType") String shareType
 			, @PathVariable("addShare") String addShare
 			, @PathVariable("removeShare") String removeShare
+			, @PathVariable("editYes") String editYes
+			, @PathVariable("editNo") String editNo
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		
@@ -350,6 +363,8 @@ public class DataAPI  {
 			if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
 			if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
 			if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
+			if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
+			if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
 			
 			param.clear();
 			param.put("loginId", loginId);
@@ -378,6 +393,18 @@ public class DataAPI  {
 							String[] shareTList = removeShare.split(",");
 							tmpParam.put("shareTList", shareTList);
 							resultIntegerValue = userDao.deleteShare(tmpParam);
+						}
+						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+							String[] editList = editYes.split(",");
+							tmpParam.put("editType", "Y");
+							tmpParam.put("editList", editList);
+							resultIntegerValue = userDao.updateShareEdit(tmpParam);
+						}
+						if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+							String[] editList = editNo.split(",");
+							tmpParam.put("editType", "N");
+							tmpParam.put("editList", editList);
+							resultIntegerValue = userDao.updateShareEdit(tmpParam);
 						}
 					}else{
 						resultIntegerValue = userDao.deleteShare(tmpParam);
@@ -660,8 +687,8 @@ public class DataAPI  {
 			editYes = editYes.replace("&nbsp", "");
 			editNo = editNo.replace("&nbsp", "");
 			
-			longitude = longitude.replace("&nbsp", "");
-			latitude = latitude.replace("&nbsp", "");
+			longitude = longitude.replace("&nbsp", "0.0");
+			latitude = latitude.replace("&nbsp", "0.0");
 			
 			param.clear();
 			param.put("loginId", loginId);
@@ -766,7 +793,7 @@ public class DataAPI  {
 						}else if("GeoPhoto".equals(type)){
 							resultList = dataDao.selectImageList(param);
 						}else if("GeoVideo".equals(type)){
-//							resultList = dataDao.selectImageList(param);
+							resultList = dataDao.selectVideoList(param);
 						}
 					}
 //					resultList = dataDao.selectImageList(param);
@@ -790,7 +817,7 @@ public class DataAPI  {
 								}else if("GeoPhoto".equals(type)){
 									resultIntegerValue = dataDao.deleteImage(param);
 								}else if("GeoVideo".equals(type)){
-//									resultList = dataDao.selectImageList(param);
+									resultIntegerValue = dataDao.deleteVideo(param);
 								}
 							}
 							
@@ -1057,7 +1084,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/saveVideo/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{shareType}/{shareUser}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/saveVideo/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{projectIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveVideoService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -1069,12 +1096,12 @@ public class DataAPI  {
 			, @PathVariable("latitude") String latitude
 			, @PathVariable("longitude") String longitude
 			, @PathVariable("tabName") String tabName
-			, @PathVariable("shareType") String shareType
-			, @PathVariable("shareUser") String shareUser
+			, @PathVariable("projectIdx") String projectIdx
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
 		result = new HashMap<String, String>();
+		String shareType = "";
 		
 		//token
 		param.clear();
@@ -1090,7 +1117,6 @@ public class DataAPI  {
 			content = content.replaceAll("&sbsp","/");
 			longitude = longitude.replace("&nbsp", "");
 			latitude = latitude.replace("&nbsp", "");
-			shareUser = shareUser.replace("&nbsp", "");
 			filePath = filePath.replaceAll("&sbsp","/");
 			
 			String filename = "";
@@ -1111,19 +1137,25 @@ public class DataAPI  {
 			param.put("longitude", longitude);
 			param.put("latitude", latitude);
 			param.put("tabName", tabName);
-			param.put("shareType", shareType);
-			resultIntegerValue = dataDao.insertVideo(param);
+			param.put("projectIdx", projectIdx);
+			resultList = dataDao.selectProjectList(param);
 			
-			if(resultIntegerValue == 1) {
-				if(param != null){
-					if(shareType != null && "2".equals(shareType) && shareUser != null && !"".equals(shareUser) && !"null".equals(shareUser)){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-//						
-						String[] shareTList = shareUser.split(",");
-						tmpParam.put("shareTList", shareTList);
-						tmpParam.put("shareIdx", param.get("idx"));
-						tmpParam.put("shareKind", "GeoVideo");
-						resultIntegerValue = userDao.insertShare(tmpParam);
+			if(resultList != null && resultList.size()>0){
+				HashMap<String, String> tmpMap =  (HashMap<String, String>)resultList.get(0);
+				if(tmpMap != null){
+					shareType = String.valueOf(tmpMap.get("SHARETYPE"));
+					param.put("shareType", shareType);
+					
+					resultIntegerValue = dataDao.insertVideo(param);
+					
+					if(resultIntegerValue == 1) {
+						if(param != null){
+							if(shareType != null && "2".equals(shareType)){
+								param.put("shareIdx", String.valueOf(param.get("idx")));
+								param.put("shareKind", "GeoVideo");
+								resultIntegerValue = userDao.insertShareFormProject(param);
+							}
+						}
 					}
 				}
 			}
@@ -1143,7 +1175,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateVideo/{token}/{loginId}/{idx}/{title}/{content}/{tabName}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateVideo/{token}/{loginId}/{idx}/{title}/{content}/{tabName}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateVideoService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -1156,6 +1188,8 @@ public class DataAPI  {
 			, @PathVariable("addShareUser") String addShareUser
 			, @PathVariable("removeShareUser") String removeShareUser
 			, @PathVariable("xmlData") String xmlData
+			, @PathVariable("editYes") String editYes
+			, @PathVariable("editNo") String editNo
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
@@ -1178,6 +1212,8 @@ public class DataAPI  {
 			if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
 				xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
 			}
+			editYes = editYes.replace("&nbsp", "");
+			editNo = editNo.replace("&nbsp", "");
 			
 			param.clear();
 			param.put("loginId", loginId);
@@ -1205,6 +1241,18 @@ public class DataAPI  {
 							String[] shareTList = removeShareUser.split(",");
 							tmpParam.put("shareTList", shareTList);
 							resultIntegerValue = userDao.deleteShare(tmpParam);
+						}
+						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+							String[] editList = editYes.split(",");
+							tmpParam.put("editType", "Y");
+							tmpParam.put("editList", editList);
+							resultIntegerValue = userDao.updateShareEdit(tmpParam);
+						}
+						if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+							String[] editList = editNo.split(",");
+							tmpParam.put("editType", "N");
+							tmpParam.put("editList", editList);
+							resultIntegerValue = userDao.updateShareEdit(tmpParam);
 						}
 					}else{
 						resultIntegerValue = userDao.deleteShare(tmpParam);
@@ -1447,7 +1495,7 @@ public class DataAPI  {
 			shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
 			projectEditYes = projectEditYes.replace("&nbsp", "");
 			projectEditNo = projectEditNo.replace("&nbsp", "");
-			markerIcon = markerIcon.replace("&nbsp", "");
+			markerIcon = markerIcon.replace("&nbsp", "").replace("&pbsp", ".");
 			
 			param.clear();
 			param.put("loginId", loginId);
@@ -1599,8 +1647,22 @@ public class DataAPI  {
 										param.put("shareKind", "GeoPhoto");
 										resultIntegerValue += userDao.insertShareFormProject(param);
 									}
-								}else{
-									//비디오
+								}else if("GeoVideo".equals(tmpMv[1])){
+									param.put("moveContent", tmpMv[2]);
+									resultIntegerValue = dataDao.updateVideoMove(param);
+									
+									//공유 유저 삭제
+									tmpParam = new HashMap<String, Object>();
+									tmpParam.put("shareIdx", tmpMv[2]);
+									tmpParam.put("shareKind","GeoVideo");
+									resultIntegerValue += userDao.deleteShare(tmpParam);
+									
+									if("2".equals(proShare)){
+										//공유 유저 추가
+										param.put("shareIdx", String.valueOf(tmpMv[2]));
+										param.put("shareKind", "GeoVideo");
+										resultIntegerValue += userDao.insertShareFormProject(param);
+									}
 								}
 							}
 						}
