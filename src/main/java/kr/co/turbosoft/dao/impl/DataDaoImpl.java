@@ -214,6 +214,21 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 	}
 	
 	@Override
+	public int deleteVideo(HashMap<String, String> param) {
+		resultIntegerValue = getSqlSession().delete("data.deleteVideo", param);
+		return resultIntegerValue;
+	}
+	
+	@Override
+	public int updateVideoMove(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().update("data.updateVideoMove", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
 	public List<Object> selectProjectList(HashMap<String, String> param) {
 		// TODO Auto-generated method stub
 		resultList = getSqlSession().selectList("data.selectProjectList", param);
