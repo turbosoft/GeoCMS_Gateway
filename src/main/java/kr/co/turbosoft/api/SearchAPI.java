@@ -59,64 +59,70 @@ public class SearchAPI {
 		token = token.replace("&nbsp", "");
 		loginId = loginId.replace("&nbsp", "");
 		
-		if(loginId != null && !"".equals(loginId) &&  !"null".equals(loginId)){
-			//token
+		try {
+			if(loginId != null && !"".equals(loginId) &&  !"null".equals(loginId)){
+				//token
+				param = new HashMap<String, String>();
+				param.put("token", token);
+				result = userDao.selectUid(param);
+				if(result == null){
+					resultJSON.put("Code", 203);
+					resultJSON.put("Message", Message.code203);
+					return callback + "(" + resultJSON.toString() + ")";
+				}
+			}
+			
 			param = new HashMap<String, String>();
-			param.put("token", token);
-			result = userDao.selectUid(param);
-			if(result == null){
-				resultJSON.put("Code", 203);
-				resultJSON.put("Message", Message.code203);
-				return callback + "(" + resultJSON.toString() + ")";
-			}
-		}
-		
-		param = new HashMap<String, String>();
-		param.put("loginId", loginId);
-		param.put("text", text);
-		param.put("boardChk", boardChk);
-		param.put("imageChk", imageChk);
-		param.put("videoChk", videoChk);
-		param.put("check", check);
-		param.put("display", display);
-		param.put("projectImage", projectImage);
-		param.put("projectVideo", projectVideo);
-		
-		//get Base
-		resultList = searchDao.selectSearchList(param);
-		
-		if(resultList != null && resultList.size() > 0){
-			for(int i=0;i<resultList.size();i++){
-				String searchKind = "";
-				result2 = (HashMap<String, String>)resultList.get(i);
-				String title = (String)result2.get("TITLE");
-				String content = (String)result2.get("CONTENT");
-				String xmlData = (String)result2.get("XMLDATA");
-				
-				if("content".equals(check) || "all".equals(check)){
-					if(title.indexOf(text) > -1){
-						searchKind = "Title";
-					}
-					if(content.indexOf(text) > -1){
-						if(searchKind != null && searchKind.equals("Title")){
-							searchKind += "/";
+			param.put("loginId", loginId);
+			param.put("text", text);
+			param.put("boardChk", boardChk);
+			param.put("imageChk", imageChk);
+			param.put("videoChk", videoChk);
+			param.put("check", check);
+			param.put("display", display);
+			param.put("projectImage", projectImage);
+			param.put("projectVideo", projectVideo);
+			
+			//get Base
+			resultList = searchDao.selectSearchList(param);
+			
+			if(resultList != null && resultList.size() > 0){
+				for(int i=0;i<resultList.size();i++){
+					String searchKind = "";
+					result2 = (HashMap<String, String>)resultList.get(i);
+					String title = (String)result2.get("TITLE");
+					String content = (String)result2.get("CONTENT");
+					String xmlData = (String)result2.get("XMLDATA");
+					
+					if("content".equals(check) || "all".equals(check)){
+						if(title.indexOf(text) > -1){
+							searchKind = "Title";
 						}
-						searchKind += "Content";
+						if(content.indexOf(text) > -1){
+							if(searchKind != null && searchKind.equals("Title")){
+								searchKind += "/";
+							}
+							searchKind += "Content";
+						}
 					}
-				}
-				if(("anno".equals(check) || "all".equals(check)) && xmlData != null && xmlData.indexOf(text) > -1){
-					if(check.equals("all") && !"".equals(searchKind)){
-						searchKind += " and ";
+					if(("anno".equals(check) || "all".equals(check)) && xmlData != null && xmlData.indexOf(text) > -1){
+						if(check.equals("all") && !"".equals(searchKind)){
+							searchKind += " and ";
+						}
+						searchKind += "Annotation";
 					}
-					searchKind += "Annotation";
+					result2.put("SEARCHKIND", searchKind);
 				}
-				result2.put("SEARCHKIND", searchKind);
 			}
+			
+			resultJSON.put("Code", 100);
+			resultJSON.put("Message", Message.code100);
+			resultJSON.put("Data", JSONArray.fromObject(resultList));
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
-		
-		resultJSON.put("Code", 100);
-		resultJSON.put("Message", Message.code100);
-		resultJSON.put("Data", JSONArray.fromObject(resultList));
 		
 		return callback + "(" + resultJSON.toString() + ")";
 	}
