@@ -49,17 +49,22 @@ public class DataAPI  {
 		param = new HashMap<String, String>();
 		
 		//get Base
-		
-		result = dataDao.selectBase();
-		
-		if(result != null) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", result);
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		try {
+			result = dataDao.selectBase();
+			
+			if(result != null) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", result);
+			}
+			else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -83,38 +88,42 @@ public class DataAPI  {
 		//token
 		param = new HashMap<String, String>();
 		param.put("token", token);
-		
-		result = userDao.selectUid(param);
-		
-		if(result != null){
-			if("ADMIN".equals(result.get("TYPE"))){
-				param.clear();
-				param.put("contentTab", contentTab);
-				param.put("contentTabType", contentTabType);
-				param.put("boardTab", boardTab);
-				param.put("contentNum", contentNum);
-				param.put("boardNum", boardNum);
-				param.put("openAPI", openAPI);
-				param.put("latestView", latestView);
-				param.put("mapZoom", mapZoom);
-				
-				resultIntegerValue = dataDao.updateBase(param);
-				
-				if(resultIntegerValue == 1) {
-					resultJSON.put("Code", 100);
-					resultJSON.put("Message", Message.code100);
-					resultJSON.put("Data", JSONArray.fromObject(resultList));
-				}else {
-					resultJSON.put("Code", 200);
-					resultJSON.put("Message", Message.code200);
+		try {
+			result = userDao.selectUid(param);
+			if(result != null){
+				if("ADMIN".equals(result.get("TYPE"))){
+					param.clear();
+					param.put("contentTab", contentTab);
+					param.put("contentTabType", contentTabType);
+					param.put("boardTab", boardTab);
+					param.put("contentNum", contentNum);
+					param.put("boardNum", boardNum);
+					param.put("openAPI", openAPI);
+					param.put("latestView", latestView);
+					param.put("mapZoom", mapZoom);
+					
+					resultIntegerValue = dataDao.updateBase(param);
+					
+					if(resultIntegerValue == 1) {
+						resultJSON.put("Code", 100);
+						resultJSON.put("Message", Message.code100);
+						resultJSON.put("Data", JSONArray.fromObject(resultList));
+					}else {
+						resultJSON.put("Code", 300);
+						resultJSON.put("Message", Message.code300);
+					}
+				}else{
+					resultJSON.put("Code", 500);
+					resultJSON.put("Message", Message.code500);
 				}
 			}else{
-				resultJSON.put("Code", 500);
-				resultJSON.put("Message", Message.code500);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		}catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -134,38 +143,43 @@ public class DataAPI  {
 		param = new HashMap<String, String>();
 		param.put("token", token);
 		
-		result = userDao.selectUid(param);
-		
-		if(result != null){
-			if(nowRightTabName != null){
-				for(int i=0;i<tempOldNameArr.size();i++){
-					param2 = new HashMap<String, String>();
-					param2.put("newTabName", (String)tempTabArr.get(i));
-					param2.put("oldTabName", (String)tempOldNameArr.get(i));
-					
-					if("content".equals(nowRightTabName)){
-						resultIntegerValue += dataDao.updateTabNameImage(param2);
-						resultIntegerValue += dataDao.updateTabNameVideo(param2);
-					}else{
-						resultIntegerValue += dataDao.updateTabNameBoard(param2);
+		try{
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				if(nowRightTabName != null){
+					for(int i=0;i<tempOldNameArr.size();i++){
+						param2 = new HashMap<String, String>();
+						param2.put("newTabName", (String)tempTabArr.get(i));
+						param2.put("oldTabName", (String)tempOldNameArr.get(i));
+						
+						if("content".equals(nowRightTabName)){
+							resultIntegerValue += dataDao.updateTabNameImage(param2);
+							resultIntegerValue += dataDao.updateTabNameVideo(param2);
+						}else{
+							resultIntegerValue += dataDao.updateTabNameBoard(param2);
+						}
 					}
 				}
+				
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+					resultJSON.put("Data", JSONArray.fromObject(resultList));
+				}else {
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-			
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
-				resultJSON.put("Data", JSONArray.fromObject(resultList));
-			}else {
-				resultJSON.put("Code", 200);
-				resultJSON.put("Message", Message.code200);
-			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		}catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
-		
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
@@ -186,59 +200,64 @@ public class DataAPI  {
 		result = new HashMap<String, String>();
 		List<Object> shareList = new ArrayList<Object>();
 		
-		if(type != null){
-			if("list".equals(type)){
-				loginId = loginId.replace("&nbsp", "");
-				pageNum = pageNum.replace("&nbsp", "");
-				contentNum = contentNum.replace("&nbsp", "");
-				tabName = tabName.replace("&nbsp", "");
-				
-				param.put("type", type);
-				param.put("pageNum", pageNum);
-				param.put("contentNum", contentNum);
-				param.put("tabName", tabName);
-				param.put("loginId", loginId);
-				
-				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
-					int tmpPage = Integer.valueOf(pageNum);
-					int tmpContent = Integer.valueOf(contentNum);
-					int offset = tmpContent * (tmpPage-1);
-					param.put("offset", String.valueOf(offset));
+		try {
+			if(type != null){
+				if("list".equals(type)){
+					loginId = loginId.replace("&nbsp", "");
+					pageNum = pageNum.replace("&nbsp", "");
+					contentNum = contentNum.replace("&nbsp", "");
+					tabName = tabName.replace("&nbsp", "");
+					
+					param.put("type", type);
+					param.put("pageNum", pageNum);
+					param.put("contentNum", contentNum);
+					param.put("tabName", tabName);
+					param.put("loginId", loginId);
+					
+					if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
+						int tmpPage = Integer.valueOf(pageNum);
+						int tmpContent = Integer.valueOf(contentNum);
+						int offset = tmpContent * (tmpPage-1);
+						param.put("offset", String.valueOf(offset));
+					}
+					
+					result = dataDao.selectBoardListLen(param);
+				}else if("one".equals(type)){
+					param.put("loginId", loginId);
+					param.put("idx", idx);
+					param.put("token", token);
+					result = userDao.selectUid(param);
+					if(result != null){
+						param.put("shareIdx", idx);
+						param.put("shareKind", "GeoCMS");
+						shareList = userDao.selectShareUserList(param);
+					}
+				}else if("latest".equals(type)){
+					param.put("loginId", loginId);
+					param.put("contentNum", contentNum);
 				}
 				
-				result = dataDao.selectBoardListLen(param);
-			}else if("one".equals(type)){
-				param.put("loginId", loginId);
-				param.put("idx", idx);
-				param.put("token", token);
-				result = userDao.selectUid(param);
-				if(result != null){
-					param.put("shareIdx", idx);
-					param.put("shareKind", "GeoCMS");
-					shareList = userDao.selectShareUserList(param);
-				}
-			}else if("latest".equals(type)){
-				param.put("loginId", loginId);
-				param.put("contentNum", contentNum);
+				resultList = dataDao.selectBoardList(param);
 			}
 			
-			resultList = dataDao.selectBoardList(param);
-		}
-		
-		if(resultList != null && resultList.size() != 0) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", JSONArray.fromObject(resultList));
-			if(result != null){
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+			if(resultList != null && resultList.size() != 0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", JSONArray.fromObject(resultList));
+				if(result != null){
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+				}
+				if(shareList != null && shareList.size() > 0){
+					resultJSON.put("shareList", shareList);
+				}
+			}else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
 			}
-			if(shareList != null && shareList.size() > 0){
-				resultJSON.put("shareList", shareList);
-			}
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		} catch (Exception e) {
+			e.getMessage();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -268,62 +287,69 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-			if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
-			if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
-			if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
-			if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
-			if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
-			if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("files", files);
-			param.put("filePath", filePath);
-			param.put("tabName", tabName);
-			param.put("shareType", shareType);
-			resultIntegerValue = dataDao.insertBoard(param);
-			
-			if(resultIntegerValue == 1) {
-				if(param != null){
-					if(shareType != null && "2".equals(shareType) && addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-//						
-						String[] shareTList = addShare.split(",");
-						tmpParam.put("shareTList", shareTList);
-						tmpParam.put("shareIdx", param.get("idx"));
-						tmpParam.put("shareKind", "GeoCMS");
-						resultIntegerValue = userDao.insertShare(tmpParam);
-						
-						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-							String[] editList = editYes.split(",");
-							tmpParam.put("editType", "Y");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
+				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
+				if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
+				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
+				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
+				if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
+				if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("files", files);
+				param.put("filePath", filePath);
+				param.put("tabName", tabName);
+				param.put("shareType", shareType);
+				resultIntegerValue = dataDao.insertBoard(param);
+				
+				if(resultIntegerValue == 1) {
+					if(param != null){
+						if(shareType != null && "2".equals(shareType) && addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
+							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+//							
+							String[] shareTList = addShare.split(",");
+							tmpParam.put("shareTList", shareTList);
+							tmpParam.put("shareIdx", param.get("idx"));
+							tmpParam.put("shareKind", "GeoCMS");
+							resultIntegerValue = userDao.insertShare(tmpParam);
+							
+							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+								String[] editList = editYes.split(",");
+								tmpParam.put("editType", "Y");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
 						}
 					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -351,75 +377,82 @@ public class DataAPI  {
 		param = new HashMap<String, String>();
 		//token
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-			if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
-			if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
-			if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
-			if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
-			if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
-			if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("files", files);
-			param.put("filePath", filePath);
-			param.put("tabName", tabName);
-			param.put("idx", idx);
-			param.put("shareType", shareType);
-			resultIntegerValue = dataDao.updateBoard(param);
-			
-			if(resultIntegerValue == 1) {
-				if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-					tmpParam.put("shareIdx", idx);
-					tmpParam.put("shareKind", "GeoCMS");
-					
-					if("2".equals(shareType)){
-						if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
-							String[] shareTList = addShare.split(",");
-							tmpParam.put("shareTList", shareTList);
-							resultIntegerValue = userDao.insertShare(tmpParam);
-						}
-						if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){
-							String[] shareTList = removeShare.split(",");
-							tmpParam.put("shareTList", shareTList);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
+				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
+				if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
+				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
+				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
+				if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){ editYes = editYes.replaceAll("&nbsp",""); }
+				if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){ editNo = editNo.replaceAll("&nbsp",""); }
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("files", files);
+				param.put("filePath", filePath);
+				param.put("tabName", tabName);
+				param.put("idx", idx);
+				param.put("shareType", shareType);
+				resultIntegerValue = dataDao.updateBoard(param);
+				
+				if(resultIntegerValue == 1) {
+					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+						tmpParam.put("shareIdx", idx);
+						tmpParam.put("shareKind", "GeoCMS");
+						
+						if("2".equals(shareType)){
+							if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
+								String[] shareTList = addShare.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.insertShare(tmpParam);
+							}
+							if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){
+								String[] shareTList = removeShare.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.deleteShare(tmpParam);
+							}
+							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+								String[] editList = editYes.split(",");
+								tmpParam.put("editType", "Y");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+								String[] editList = editNo.split(",");
+								tmpParam.put("editType", "N");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+						}else{
 							resultIntegerValue = userDao.deleteShare(tmpParam);
 						}
-						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-							String[] editList = editYes.split(",");
-							tmpParam.put("editType", "Y");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-						if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
-							String[] editList = editNo.split(",");
-							tmpParam.put("editType", "N");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-					}else{
-						resultIntegerValue = userDao.deleteShare(tmpParam);
 					}
+					
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
 				}
-				
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -440,42 +473,47 @@ public class DataAPI  {
 		param = new HashMap<String, String>();
 		result = new HashMap<String, String>();
 		
-		if(type != null){
-			loginId = loginId.replace("&nbsp", "");
-			pageNum = pageNum.replace("&nbsp", "");
-			contentNum = contentNum.replace("&nbsp", "");
-			tabName = tabName.replace("&nbsp", "");
-			
-			param.put("type", type);
-			param.put("loginId", loginId);
-			param.put("pageNum", pageNum);
-			param.put("contentNum", contentNum);
-			param.put("tabName", tabName);
-			
-			if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
-				int tmpPage = Integer.valueOf(pageNum);
-				int tmpContent = Integer.valueOf(contentNum);
-				int offset = tmpContent * (tmpPage-1);
-				param.put("offset", String.valueOf(offset));
+		try {
+			if(type != null){
+				loginId = loginId.replace("&nbsp", "");
+				pageNum = pageNum.replace("&nbsp", "");
+				contentNum = contentNum.replace("&nbsp", "");
+				tabName = tabName.replace("&nbsp", "");
+				
+				param.put("type", type);
+				param.put("loginId", loginId);
+				param.put("pageNum", pageNum);
+				param.put("contentNum", contentNum);
+				param.put("tabName", tabName);
+				
+				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
+					int tmpPage = Integer.valueOf(pageNum);
+					int tmpContent = Integer.valueOf(contentNum);
+					int offset = tmpContent * (tmpPage-1);
+					param.put("offset", String.valueOf(offset));
+				}
+				
+				resultList = dataDao.selectContentList(param);
+				if("list".equals(type)){
+					result = dataDao.selectContentListLen(param);
+				}
 			}
 			
-			resultList = dataDao.selectContentList(param);
-			if("list".equals(type)){
-				result = dataDao.selectContentListLen(param);
+			if(resultList != null && resultList.size() != 0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", JSONArray.fromObject(resultList));
+				if(result != null){
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+				}
+			}else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
 			}
-		}
-		
-		if(resultList != null && resultList.size() != 0) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", JSONArray.fromObject(resultList));
-			if(result != null){
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
-			}
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -498,71 +536,75 @@ public class DataAPI  {
 		result = new HashMap<String, String>();
 		List<Object> shareList = new ArrayList<Object>();
 		
-		if(type != null){
-			if("one".equals(type)){
-				//token
-				param.clear();
-				param.put("token", token);
-				result = userDao.selectUid(param);
+		try {
+			if(type != null){
+				if("one".equals(type)){
+					//token
+					param.clear();
+					param.put("token", token);
+					result = userDao.selectUid(param);
+					
+					if(result == null){
+						resultJSON.put("Code", 203);
+						resultJSON.put("Message", Message.code203);
+						return callback + "(" + resultJSON.toString() + ")";
+					}
+				}
 				
-				if(result == null){
-					resultJSON.put("Code", 203);
-					resultJSON.put("Message", Message.code203);
-					return callback + "(" + resultJSON.toString() + ")";
+				loginId = loginId.replace("&nbsp", "");
+				pageNum = pageNum.replace("&nbsp", "");
+				contentNum = contentNum.replace("&nbsp", "");
+				tabName = tabName.replace("&nbsp", "");
+				idx = idx.replace("&nbsp", "");
+				
+				param.put("type", type);
+				param.put("loginId", loginId);
+				param.put("pageNum", pageNum);
+				param.put("contentNum", contentNum);
+				param.put("tabName", tabName);
+				param.put("idx", idx);
+				
+				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
+					int tmpPage = Integer.valueOf(pageNum);
+					int tmpContent = Integer.valueOf(contentNum);
+					int offset = tmpContent * (tmpPage-1);
+					param.put("offset", String.valueOf(offset));
+				}
+				
+				resultList = dataDao.selectImageList(param);
+				if("list".equals(type)){
+					result = dataDao.selectImageListLen(param);
+				}else if("one".equals(type)){
+					param.clear();
+					param.put("shareIdx", idx);
+					param.put("shareKind", "GeoPhoto");
+					shareList = userDao.selectShareUserList(param);
 				}
 			}
 			
-			loginId = loginId.replace("&nbsp", "");
-			pageNum = pageNum.replace("&nbsp", "");
-			contentNum = contentNum.replace("&nbsp", "");
-			tabName = tabName.replace("&nbsp", "");
-			idx = idx.replace("&nbsp", "");
-			
-			param.put("type", type);
-			param.put("loginId", loginId);
-			param.put("pageNum", pageNum);
-			param.put("contentNum", contentNum);
-			param.put("tabName", tabName);
-			param.put("idx", idx);
-			
-			if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
-				int tmpPage = Integer.valueOf(pageNum);
-				int tmpContent = Integer.valueOf(contentNum);
-				int offset = tmpContent * (tmpPage-1);
-				param.put("offset", String.valueOf(offset));
+			if(resultList != null && resultList.size() != 0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", JSONArray.fromObject(resultList));
+				if(result != null){
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+				}
+				if(shareList != null && shareList.size() > 0){
+					resultJSON.put("shareList", shareList);
+				}
+			}else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
 			}
-			
-			resultList = dataDao.selectImageList(param);
-			if("list".equals(type)){
-				result = dataDao.selectImageListLen(param);
-			}else if("one".equals(type)){
-				param.clear();
-				param.put("shareIdx", idx);
-				param.put("shareKind", "GeoPhoto");
-				shareList = userDao.selectShareUserList(param);
-			}
-		}
-		
-		if(resultList != null && resultList.size() != 0) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", JSONArray.fromObject(resultList));
-			if(result != null){
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
-			}
-			if(shareList != null && shareList.size() > 0){
-				resultJSON.put("shareList", shareList);
-			}
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-//	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{shareType}/{shareUser}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@RequestMapping(value = "/cms/saveImage/{token}/{loginId}/{title}/{content}/{filesStr}/{filePath}/{latitude}/{longitude}/{tabName}/{projectIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveImageService(@RequestParam("callback") String callback
@@ -585,61 +627,68 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			title = title.replaceAll("&sbsp","/");
-			content = content.replaceAll("&sbsp","/");
-			longitude = longitude.replace("&nbsp", "");
-			latitude = latitude.replace("&nbsp", "");
-			filePath = filePath.replaceAll("&sbsp","/");
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("filesStr", filesStr);
-			param.put("filePath", filePath);
-			param.put("longitude", longitude);
-			param.put("latitude", latitude);
-			param.put("tabName", tabName);
-			param.put("projectIdx", projectIdx);
-			resultList = dataDao.selectProjectList(param);
-			
-			if(resultList != null && resultList.size()>0){
-				HashMap<String, String> tmpMap =  (HashMap<String, String>)resultList.get(0);
-				if(tmpMap != null){
-					shareType = String.valueOf(tmpMap.get("SHARETYPE"));
-					param.put("shareType", shareType);
-					
-					resultIntegerValue = dataDao.insertImage(param);
-					
-					if(resultIntegerValue == 1) {
-						if(param != null){
-							if(shareType != null && "2".equals(shareType)){
-								param.put("shareIdx", String.valueOf(param.get("idx")));
-								param.put("shareKind", "GeoPhoto");
-								resultIntegerValue = userDao.insertShareFormProject(param);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				title = title.replaceAll("&sbsp","/");
+				content = content.replaceAll("&sbsp","/");
+				longitude = longitude.replace("&nbsp", "");
+				latitude = latitude.replace("&nbsp", "");
+				filePath = filePath.replaceAll("&sbsp","/");
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("filesStr", filesStr);
+				param.put("filePath", filePath);
+				param.put("longitude", longitude);
+				param.put("latitude", latitude);
+				param.put("tabName", tabName);
+				param.put("projectIdx", projectIdx);
+				resultList = dataDao.selectProjectList(param);
+				
+				if(resultList != null && resultList.size()>0){
+					HashMap<String, String> tmpMap =  (HashMap<String, String>)resultList.get(0);
+					if(tmpMap != null){
+						shareType = String.valueOf(tmpMap.get("SHARETYPE"));
+						param.put("shareType", shareType);
+						
+						resultIntegerValue = dataDao.insertImage(param);
+						
+						if(resultIntegerValue == 1) {
+							if(param != null){
+								if(shareType != null && "2".equals(shareType)){
+									param.put("shareIdx", String.valueOf(param.get("idx")));
+									param.put("shareKind", "GeoPhoto");
+									resultIntegerValue = userDao.insertShareFormProject(param);
+								}
 							}
 						}
 					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -670,81 +719,88 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			title = title.replaceAll("&sbsp","/");
-			content = content.replaceAll("&sbsp","/");
-			addShareUser = addShareUser.replace("&nbsp", "");
-			removeShareUser = removeShareUser.replace("&nbsp", "");
-			if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
-				xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
-			}
-			editYes = editYes.replace("&nbsp", "");
-			editNo = editNo.replace("&nbsp", "");
-			
-			longitude = longitude.replace("&nbsp", "0.0");
-			latitude = latitude.replace("&nbsp", "0.0");
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("idx", idx);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("tabName", tabName);
-			param.put("shareType", shareType);
-			param.put("xmlData", xmlData);
-			param.put("longitude", longitude);
-			param.put("latitude", latitude);
-			resultIntegerValue = dataDao.updateImage(param);
-			
-			if(resultIntegerValue == 1) {
-				if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-					tmpParam.put("shareIdx", idx);
-					tmpParam.put("shareKind", "GeoPhoto");
-					
-					if("2".equals(shareType)){
-						if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser)){
-							String[] shareTList = addShareUser.split(",");
-							tmpParam.put("shareTList", shareTList);
-							resultIntegerValue = userDao.insertShare(tmpParam);
-						}
-						if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser)){
-							String[] shareTList = removeShareUser.split(",");
-							tmpParam.put("shareTList", shareTList);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				title = title.replaceAll("&sbsp","/");
+				content = content.replaceAll("&sbsp","/");
+				addShareUser = addShareUser.replace("&nbsp", "");
+				removeShareUser = removeShareUser.replace("&nbsp", "");
+				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
+					xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
+				}
+				editYes = editYes.replace("&nbsp", "");
+				editNo = editNo.replace("&nbsp", "");
+				
+				longitude = longitude.replace("&nbsp", "0.0");
+				latitude = latitude.replace("&nbsp", "0.0");
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("idx", idx);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("tabName", tabName);
+				param.put("shareType", shareType);
+				param.put("xmlData", xmlData);
+				param.put("longitude", longitude);
+				param.put("latitude", latitude);
+				resultIntegerValue = dataDao.updateImage(param);
+				
+				if(resultIntegerValue == 1) {
+					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+						tmpParam.put("shareIdx", idx);
+						tmpParam.put("shareKind", "GeoPhoto");
+						
+						if("2".equals(shareType)){
+							if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser)){
+								String[] shareTList = addShareUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.insertShare(tmpParam);
+							}
+							if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser)){
+								String[] shareTList = removeShareUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.deleteShare(tmpParam);
+							}
+							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+								String[] editList = editYes.split(",");
+								tmpParam.put("editType", "Y");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+								String[] editList = editNo.split(",");
+								tmpParam.put("editType", "N");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+						}else{
 							resultIntegerValue = userDao.deleteShare(tmpParam);
 						}
-						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-							String[] editList = editYes.split(",");
-							tmpParam.put("editType", "Y");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-						if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
-							String[] editList = editNo.split(",");
-							tmpParam.put("editType", "N");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-					}else{
-						resultIntegerValue = userDao.deleteShare(tmpParam);
 					}
+					
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
 				}
-				
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -768,107 +824,110 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(idxArr != null && !"".equals(idxArr) && !"null".equals(idxArr)){
-				idxArray = idxArr.split(",");
-			}
-			
-			if(idxArray != null && idxArray.length > 0){
-				resultIntegerValue = 0;
-				param.clear();
-				fileFull = "";
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				param.put("loginId", loginId);
-				for(int i=0;i<idxArray.length;i++){
-					param.put("idx", idxArray[i]);
-					if(type != null){
-						if("GeoCMS".equals(type)){
-							resultList = dataDao.selectBoardList(param);
-						}else if("GeoPhoto".equals(type)){
-							resultList = dataDao.selectImageList(param);
-						}else if("GeoVideo".equals(type)){
-							resultList = dataDao.selectVideoList(param);
-						}
-					}
-//					resultList = dataDao.selectImageList(param);
+				if(idxArr != null && !"".equals(idxArr) && !"null".equals(idxArr)){
+					idxArray = idxArr.split(",");
+				}
+				
+				if(idxArray != null && idxArray.length > 0){
+					resultIntegerValue = 0;
+					param.clear();
+					fileFull = "";
 					
-					if(resultList != null && resultList.size() > 0){
-						HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(0);
-						if(tmpMap != null){
-							String[] tmpFileArr = null;
-							if(tmpMap.get("FILENAME") != null && !"".equals(tmpMap.get("FILENAME")) && !"null".equals(tmpMap.get("FILENAME"))){
-								String tmpFileName = tmpMap.get("FILENAME").replace("&nbsp", "");
-								if(tmpFileName != null && !"".equals(tmpFileName)){
-									tmpFileArr = tmpMap.get("FILENAME").split(",");
-								}
+					param.put("loginId", loginId);
+					for(int i=0;i<idxArray.length;i++){
+						param.put("idx", idxArray[i]);
+						if(type != null){
+							if("GeoCMS".equals(type)){
+								resultList = dataDao.selectBoardList(param);
+							}else if("GeoPhoto".equals(type)){
+								resultList = dataDao.selectImageList(param);
+							}else if("GeoVideo".equals(type)){
+								resultList = dataDao.selectVideoList(param);
 							}
-							if(tmpFileArr != null && tmpFileArr.length > 0){
-								for(int k=0;k<tmpFileArr.length;k++){
-									fileFull = tmpMap.get("FILEPATH") + type + "/"+ tmpFileArr[k];
+						}
+						
+						if(resultList != null && resultList.size() > 0){
+							HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(0);
+							if(tmpMap != null){
+								String[] tmpFileArr = null;
+								if(tmpMap.get("FILENAME") != null && !"".equals(tmpMap.get("FILENAME")) && !"null".equals(tmpMap.get("FILENAME"))){
+									String tmpFileName = tmpMap.get("FILENAME").replace("&nbsp", "");
+									if(tmpFileName != null && !"".equals(tmpFileName)){
+										tmpFileArr = tmpMap.get("FILENAME").split(",");
+									}
 								}
-								if("GeoCMS".equals(type)){
-									resultIntegerValue = dataDao.deleteBoard(param);
-								}else if("GeoPhoto".equals(type)){
-									resultIntegerValue = dataDao.deleteImage(param);
-								}else if("GeoVideo".equals(type)){
-									resultIntegerValue = dataDao.deleteVideo(param);
+								if(tmpFileArr != null && tmpFileArr.length > 0){
+									for(int k=0;k<tmpFileArr.length;k++){
+										fileFull = tmpMap.get("FILEPATH") + type + "/"+ tmpFileArr[k];
+									}
+									if("GeoCMS".equals(type)){
+										resultIntegerValue = dataDao.deleteBoard(param);
+									}else if("GeoPhoto".equals(type)){
+										resultIntegerValue = dataDao.deleteImage(param);
+									}else if("GeoVideo".equals(type)){
+										resultIntegerValue = dataDao.deleteVideo(param);
+									}
 								}
-							}
-							
-//							fileFull = tmpMap.get("FILEPATH") + "/" + tmpMap.get("FILENAME");
-							
-//							resultIntegerValue = dataDao.deleteImage(param);
-							if(resultIntegerValue == 1 && fileFull != null && !"".equals(fileFull)) {
-								File f = new File(fileFull);
 								
-								resultJSON.put("Code", 400);
-								resultJSON.put("Message", Message.code400);
-								
-								if (f.delete()) {
-									String tmpF = tmpMap.get("FILENAME");
-									String tmpXml = tmpF.split("\\.")[0] + ".xml";
-									fileFull = tmpMap.get("FILEPATH") + type + "/" + tmpXml;
-									f = new File(fileFull);
-									if(f.exists()){
-										if (f.delete()) {
+								if(resultIntegerValue == 1 && fileFull != null && !"".equals(fileFull)) {
+									File f = new File(fileFull);
+									
+									resultJSON.put("Code", 400);
+									resultJSON.put("Message", Message.code400);
+									
+									if (f.delete()) {
+										String tmpF = tmpMap.get("FILENAME");
+										String tmpXml = tmpF.split("\\.")[0] + ".xml";
+										fileFull = tmpMap.get("FILEPATH") + type + "/" + tmpXml;
+										f = new File(fileFull);
+										if(f.exists()){
+											if (f.delete()) {
+												resultJSON.put("Code", 100);
+												resultJSON.put("Message", Message.code100);
+										    }
+										}else{
 											resultJSON.put("Code", 100);
 											resultJSON.put("Message", Message.code100);
-									    }
-									}else{
+										}
+								    }
+								}else{
+									if("GeoCMS".equals(type)){
+										resultIntegerValue = dataDao.deleteBoard(param);
+									}
+									
+									if(resultIntegerValue == 1){
 										resultJSON.put("Code", 100);
 										resultJSON.put("Message", Message.code100);
+									}else{
+										resultJSON.put("Code", 300);
+										resultJSON.put("Message", Message.code300);
+										break;
 									}
-							    }
-							}else{
-								if("GeoCMS".equals(type)){
-									resultIntegerValue = dataDao.deleteBoard(param);
-								}
-								
-								if(resultIntegerValue == 1){
-									resultJSON.put("Code", 100);
-									resultJSON.put("Message", Message.code100);
-								}else{
-									resultJSON.put("Code", 300);
-									resultJSON.put("Message", Message.code300);
-									break;
 								}
 							}
 						}
 					}
+				}else{
+					resultJSON.put("Code", 203);
+					resultJSON.put("Message", Message.code203);
 				}
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -888,32 +947,39 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
-				xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#");
-			}
-			
-			param.clear();
-			param.put("xmlData", xmlData);
-			param.put("idx", idx);
-			resultIntegerValue = dataDao.updateXmlData(param);
-			
-			if(resultIntegerValue == 1) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
+					xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#");
+				}
+				
+				param.clear();
+				param.put("xmlData", xmlData);
+				param.put("idx", idx);
+				resultIntegerValue = dataDao.updateXmlData(param);
+				
+				if(resultIntegerValue == 1) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -923,7 +989,6 @@ public class DataAPI  {
 	@ResponseBody
 	public String getMyContentsService(@RequestParam("callback") String callback
 			, @PathVariable("viewType") String viewType
-//			, @PathVariable("contentViewType") String contentViewType
 			, @PathVariable("token") String token
 			, @PathVariable("loginId") String loginId
 			, @PathVariable("pageNum") String pageNum
@@ -938,66 +1003,62 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			pageNum = pageNum.replace("&nbsp", "");
-			contentNum = contentNum.replace("&nbsp", "");
+		try {
+			result = userDao.selectUid(param);
 			
-			if(viewType != null && !"".equals(viewType)){
-				param.put("type", "list");
-//				param.put("myContent", "Y");
-				param.put("loginId", loginId);
-				param.put("pageNum", pageNum);
-				param.put("contentNum", contentNum);
+			if(result != null){
+				pageNum = pageNum.replace("&nbsp", "");
+				contentNum = contentNum.replace("&nbsp", "");
 				
-				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
-					int tmpPage = Integer.valueOf(pageNum);
-					int tmpContent = Integer.valueOf(contentNum);
-					int offset = tmpContent * (tmpPage-1);
-					param.put("offset", String.valueOf(offset));
+				if(viewType != null && !"".equals(viewType)){
+					param.put("type", "list");
+					param.put("loginId", loginId);
+					param.put("pageNum", pageNum);
+					param.put("contentNum", contentNum);
+					
+					if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
+						int tmpPage = Integer.valueOf(pageNum);
+						int tmpContent = Integer.valueOf(contentNum);
+						int offset = tmpContent * (tmpPage-1);
+						param.put("offset", String.valueOf(offset));
+					}
+					
+					if("GeoCMS".equals(viewType)){
+						resultList = dataDao.selectBoardList(param);
+						result = dataDao.selectBoardListLen(param);
+					}
+					else if("GeoPhoto".equals(viewType)){
+						resultList = dataDao.selectImageList(param);
+						result = dataDao.selectImageListLen(param);
+					}else if("GeoVideo".equals(viewType)){
+						resultList = dataDao.selectVideoList(param);
+						result = dataDao.selectVideoListLen(param);
+					}else if("marker".equals(viewType)){
+						param.put("type", "marker");
+						param.put("myContentMarker", "Y");
+						resultList = dataDao.selectContentList(param);
+					}
 				}
 				
-				if("GeoCMS".equals(viewType)){
-					resultList = dataDao.selectBoardList(param);
-					result = dataDao.selectBoardListLen(param);
+				if(resultList != null && resultList.size() != 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+					resultJSON.put("Data", JSONArray.fromObject(resultList));
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
 				}
-				else if("GeoPhoto".equals(viewType)){
-					resultList = dataDao.selectImageList(param);
-					result = dataDao.selectImageListLen(param);
-				}else if("GeoVideo".equals(viewType)){
-					resultList = dataDao.selectVideoList(param);
-					result = dataDao.selectVideoListLen(param);
-				}else if("marker".equals(viewType)){
-					param.put("type", "marker");
-					param.put("myContentMarker", "Y");
-					resultList = dataDao.selectContentList(param);
+				else {
+					resultJSON.put("Code", 200);
+					resultJSON.put("Message", Message.code200);
 				}
-//				if("video".equals(type) || ("first".equals(type) && ("Both".equals(contentViewType) || "Video".equals(contentViewType)))){
-//					resultList2 = dataDao.selectImageList(param);
-//					imageLen = dataDao.selectImageListLen(param);
-//					
-//					if(resultList != null && resultList.size() > 0){
-//						ListUtils.union(resultList, resultList2);
-//					}else{
-//						resultList = resultList2;
-//					}
-//				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-			
-			if(resultList != null && resultList.size() != 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
-				resultJSON.put("Data", JSONArray.fromObject(resultList));
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
-			}
-			else {
-				resultJSON.put("Code", 200);
-				resultJSON.put("Message", Message.code200);
-			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1020,65 +1081,71 @@ public class DataAPI  {
 		result = new HashMap<String, String>();
 		List<Object> shareList = new ArrayList<Object>();
 		
-		if(type != null){
-			if("one".equals(type)){
-				//token
-				param.clear();
-				param.put("token", token);
-				result = userDao.selectUid(param);
+		try {
+			if(type != null){
+				if("one".equals(type)){
+					//token
+					param.clear();
+					param.put("token", token);
+					result = userDao.selectUid(param);
+					
+					if(result == null){
+						resultJSON.put("Code", 203);
+						resultJSON.put("Message", Message.code203);
+						return callback + "(" + resultJSON.toString() + ")";
+					}
+				}
 				
-				if(result == null){
-					resultJSON.put("Code", 203);
-					resultJSON.put("Message", Message.code203);
-					return callback + "(" + resultJSON.toString() + ")";
+				loginId = loginId.replace("&nbsp", "");
+				pageNum = pageNum.replace("&nbsp", "");
+				contentNum = contentNum.replace("&nbsp", "");
+				tabName = tabName.replace("&nbsp", "");
+				idx = idx.replace("&nbsp", "");
+				
+				param.put("type", type);
+				param.put("loginId", loginId);
+				param.put("pageNum", pageNum);
+				param.put("contentNum", contentNum);
+				param.put("tabName", tabName);
+				param.put("idx", idx);
+				
+				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
+					int tmpPage = Integer.valueOf(pageNum);
+					int tmpContent = Integer.valueOf(contentNum);
+					int offset = tmpContent * (tmpPage-1);
+					param.put("offset", String.valueOf(offset));
+				}
+				
+				resultList = dataDao.selectVideoList(param);
+				if("list".equals(type)){
+					result = dataDao.selectVideoListLen(param);
+				}else if("one".equals(type)){
+					param.clear();
+					param.put("shareIdx", idx);
+					param.put("shareKind", "GeoVideo");
+					shareList = userDao.selectShareUserList(param);
 				}
 			}
 			
-			loginId = loginId.replace("&nbsp", "");
-			pageNum = pageNum.replace("&nbsp", "");
-			contentNum = contentNum.replace("&nbsp", "");
-			tabName = tabName.replace("&nbsp", "");
-			idx = idx.replace("&nbsp", "");
-			
-			param.put("type", type);
-			param.put("loginId", loginId);
-			param.put("pageNum", pageNum);
-			param.put("contentNum", contentNum);
-			param.put("tabName", tabName);
-			param.put("idx", idx);
-			
-			if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum)){
-				int tmpPage = Integer.valueOf(pageNum);
-				int tmpContent = Integer.valueOf(contentNum);
-				int offset = tmpContent * (tmpPage-1);
-				param.put("offset", String.valueOf(offset));
+			if(resultList != null && resultList.size() != 0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", JSONArray.fromObject(resultList));
+				if(result != null){
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+				}
+				if(shareList != null && shareList.size() > 0){
+					resultJSON.put("shareList", shareList);
+				}
 			}
-			
-			resultList = dataDao.selectVideoList(param);
-			if("list".equals(type)){
-				result = dataDao.selectVideoListLen(param);
-			}else if("one".equals(type)){
-				param.clear();
-				param.put("shareIdx", idx);
-				param.put("shareKind", "GeoVideo");
-				shareList = userDao.selectShareUserList(param);
+			else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
 			}
-		}
-		
-		if(resultList != null && resultList.size() != 0) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", JSONArray.fromObject(resultList));
-			if(result != null){
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
-			}
-			if(shareList != null && shareList.size() > 0){
-				resultJSON.put("shareList", shareList);
-			}
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1106,70 +1173,77 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			title = title.replaceAll("&sbsp","/");
-			content = content.replaceAll("&sbsp","/");
-			longitude = longitude.replace("&nbsp", "");
-			latitude = latitude.replace("&nbsp", "");
-			filePath = filePath.replaceAll("&sbsp","/");
-			
-			String filename = "";
-			String thumbnail = "";
-			if(filesStr != null && !"".equals(filesStr)){
-				String tmpFileName = filesStr.split("\\.")[0];
-				filename = tmpFileName + "_ogg.ogg";
-				thumbnail = tmpFileName + "_thumb.jpg";
-			}
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("originname", filesStr);
-			param.put("filename", filename);
-			param.put("thumbnail", thumbnail);
-			param.put("filePath", filePath);
-			param.put("longitude", longitude);
-			param.put("latitude", latitude);
-			param.put("tabName", tabName);
-			param.put("projectIdx", projectIdx);
-			resultList = dataDao.selectProjectList(param);
-			
-			if(resultList != null && resultList.size()>0){
-				HashMap<String, String> tmpMap =  (HashMap<String, String>)resultList.get(0);
-				if(tmpMap != null){
-					shareType = String.valueOf(tmpMap.get("SHARETYPE"));
-					param.put("shareType", shareType);
-					
-					resultIntegerValue = dataDao.insertVideo(param);
-					
-					if(resultIntegerValue == 1) {
-						if(param != null){
-							if(shareType != null && "2".equals(shareType)){
-								param.put("shareIdx", String.valueOf(param.get("idx")));
-								param.put("shareKind", "GeoVideo");
-								resultIntegerValue = userDao.insertShareFormProject(param);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				title = title.replaceAll("&sbsp","/");
+				content = content.replaceAll("&sbsp","/");
+				longitude = longitude.replace("&nbsp", "");
+				latitude = latitude.replace("&nbsp", "");
+				filePath = filePath.replaceAll("&sbsp","/");
+				
+				String filename = "";
+				String thumbnail = "";
+				if(filesStr != null && !"".equals(filesStr)){
+					String tmpFileName = filesStr.split("\\.")[0];
+					filename = tmpFileName + "_ogg.ogg";
+					thumbnail = tmpFileName + "_thumb.jpg";
+				}
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("originname", filesStr);
+				param.put("filename", filename);
+				param.put("thumbnail", thumbnail);
+				param.put("filePath", filePath);
+				param.put("longitude", longitude);
+				param.put("latitude", latitude);
+				param.put("tabName", tabName);
+				param.put("projectIdx", projectIdx);
+				resultList = dataDao.selectProjectList(param);
+				
+				if(resultList != null && resultList.size()>0){
+					HashMap<String, String> tmpMap =  (HashMap<String, String>)resultList.get(0);
+					if(tmpMap != null){
+						shareType = String.valueOf(tmpMap.get("SHARETYPE"));
+						param.put("shareType", shareType);
+						
+						resultIntegerValue = dataDao.insertVideo(param);
+						
+						if(resultIntegerValue == 1) {
+							if(param != null){
+								if(shareType != null && "2".equals(shareType)){
+									param.put("shareIdx", String.valueOf(param.get("idx")));
+									param.put("shareKind", "GeoVideo");
+									resultIntegerValue = userDao.insertShareFormProject(param);
+								}
 							}
 						}
 					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1198,76 +1272,83 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			title = title.replaceAll("&sbsp","/");
-			content = content.replaceAll("&sbsp","/");
-			addShareUser = addShareUser.replace("&nbsp", "");
-			removeShareUser = removeShareUser.replace("&nbsp", "");
-			if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
-				xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
-			}
-			editYes = editYes.replace("&nbsp", "");
-			editNo = editNo.replace("&nbsp", "");
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("idx", idx);
-			param.put("title", title);
-			param.put("content", content);
-			param.put("tabName", tabName);
-			param.put("shareType", shareType);
-			param.put("xmlData", xmlData);
-			resultIntegerValue = dataDao.updateVideo(param);
-			
-			if(resultIntegerValue == 1) {
-				if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-					tmpParam.put("shareIdx", idx);
-					tmpParam.put("shareKind", "GeoVideo");
-					
-					if("2".equals(shareType)){
-						if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser)){
-							String[] shareTList = addShareUser.split(",");
-							tmpParam.put("shareTList", shareTList);
-							resultIntegerValue = userDao.insertShare(tmpParam);
-						}
-						if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser)){
-							String[] shareTList = removeShareUser.split(",");
-							tmpParam.put("shareTList", shareTList);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				title = title.replaceAll("&sbsp","/");
+				content = content.replaceAll("&sbsp","/");
+				addShareUser = addShareUser.replace("&nbsp", "");
+				removeShareUser = removeShareUser.replace("&nbsp", "");
+				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
+					xmlData = xmlData.replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
+				}
+				editYes = editYes.replace("&nbsp", "");
+				editNo = editNo.replace("&nbsp", "");
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("idx", idx);
+				param.put("title", title);
+				param.put("content", content);
+				param.put("tabName", tabName);
+				param.put("shareType", shareType);
+				param.put("xmlData", xmlData);
+				resultIntegerValue = dataDao.updateVideo(param);
+				
+				if(resultIntegerValue == 1) {
+					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+						tmpParam.put("shareIdx", idx);
+						tmpParam.put("shareKind", "GeoVideo");
+						
+						if("2".equals(shareType)){
+							if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser)){
+								String[] shareTList = addShareUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.insertShare(tmpParam);
+							}
+							if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser)){
+								String[] shareTList = removeShareUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.deleteShare(tmpParam);
+							}
+							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+								String[] editList = editYes.split(",");
+								tmpParam.put("editType", "Y");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+								String[] editList = editNo.split(",");
+								tmpParam.put("editType", "N");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+						}else{
 							resultIntegerValue = userDao.deleteShare(tmpParam);
 						}
-						if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-							String[] editList = editYes.split(",");
-							tmpParam.put("editType", "Y");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-						if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
-							String[] editList = editNo.split(",");
-							tmpParam.put("editType", "N");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-					}else{
-						resultIntegerValue = userDao.deleteShare(tmpParam);
 					}
+					
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
 				}
-				
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1289,30 +1370,33 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
-				
-		if(result != null){
-			orderIdx = orderIdx.replace("&nbsp", "");
-			shareEdit = shareEdit.replace("&nbsp", "");
-			
-			param.put("loginId", loginId);
-			param.put("orderIdx", orderIdx);
-			param.put("shareEdit", shareEdit);
-			resultList = dataDao.selectProjectList(param);
-			
-//			param.put("projectType", projectType);
-//			param.put("projectGroup", "Y");
-//			resultList = dataDao.selectProjectContentList(param);
-		}
 		
-		if(resultList != null && resultList.size() != 0) {
-			resultJSON.put("Code", 100);
-			resultJSON.put("Message", Message.code100);
-			resultJSON.put("Data", JSONArray.fromObject(resultList));
-		}
-		else {
-			resultJSON.put("Code", 200);
-			resultJSON.put("Message", Message.code200);
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				orderIdx = orderIdx.replace("&nbsp", "");
+				shareEdit = shareEdit.replace("&nbsp", "");
+				
+				param.put("loginId", loginId);
+				param.put("orderIdx", orderIdx);
+				param.put("shareEdit", shareEdit);
+				resultList = dataDao.selectProjectList(param);
+			}
+			
+			if(resultList != null && resultList.size() != 0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", JSONArray.fromObject(resultList));
+			}
+			else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1336,58 +1420,65 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
-				
-		if(result != null){
-			pageNum = pageNum.replace("&nbsp", "");
-			contentNum = contentNum.replace("&nbsp", "");
+		
+		try {
+			result = userDao.selectUid(param);
 			
-			param.put("loginId", loginId);
-			param.put("projectIdx", projectIdx);
-			param.put("pageNum", pageNum);
-			param.put("contentNum", contentNum);
-			param.put("getProject", "Y");
-			param.put("type", type);
-			
-			if(type != null && "marker".equals(type) && projectIdx != null && !"".equals(projectIdx) && !"null".equals(projectIdx)){
-				String[] projectIdxList = projectIdx.split(",");
-				List<Object> resultList2 = new ArrayList<Object>();
+			if(result != null){
+				pageNum = pageNum.replace("&nbsp", "");
+				contentNum = contentNum.replace("&nbsp", "");
 				
-				if(projectIdxList != null && projectIdxList.length > 0){
-					for(int i=0; i<projectIdxList.length;i++){
-						param.put("projectIdx", projectIdxList[i]);
-						resultList = dataDao.selectProjectContentList(param);
-						if(resultList != null && resultList.size()>0){
-							resultList2.addAll(resultList);
+				param.put("loginId", loginId);
+				param.put("projectIdx", projectIdx);
+				param.put("pageNum", pageNum);
+				param.put("contentNum", contentNum);
+				param.put("getProject", "Y");
+				param.put("type", type);
+				
+				if(type != null && "marker".equals(type) && projectIdx != null && !"".equals(projectIdx) && !"null".equals(projectIdx)){
+					String[] projectIdxList = projectIdx.split(",");
+					List<Object> resultList2 = new ArrayList<Object>();
+					
+					if(projectIdxList != null && projectIdxList.length > 0){
+						for(int i=0; i<projectIdxList.length;i++){
+							param.put("projectIdx", projectIdxList[i]);
+							resultList = dataDao.selectProjectContentList(param);
+							if(resultList != null && resultList.size()>0){
+								resultList2.addAll(resultList);
+							}
 						}
 					}
-				}
-				resultList = resultList2;
-			}else {
-				if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
-					int tmpPage = Integer.valueOf(pageNum);
-					int tmpContent = Integer.valueOf(contentNum);
-					int offset = tmpContent * (tmpPage-1);
-					param.put("offset", String.valueOf(offset));
+					resultList = resultList2;
+				}else {
+					if(pageNum != null && !"".equals(pageNum) && !"null".equals(pageNum) && contentNum != null && !"".equals(pageNum) && !"null".equals(contentNum)){
+						int tmpPage = Integer.valueOf(pageNum);
+						int tmpContent = Integer.valueOf(contentNum);
+						int offset = tmpContent * (tmpPage-1);
+						param.put("offset", String.valueOf(offset));
+					}
+					
+					resultList = dataDao.selectProjectContentList(param);
+					result = dataDao.selectProjectContentListLen(param);
 				}
 				
-				resultList = dataDao.selectProjectContentList(param);
-				result = dataDao.selectProjectContentListLen(param);
+				if(resultList != null && resultList.size() != 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+					resultJSON.put("Data", JSONArray.fromObject(resultList));
+					resultJSON.put("DataLen", result.get("TOTAL_CNT"));
+				}
+				else {
+					resultJSON.put("Code", 200);
+					resultJSON.put("Message", Message.code200);
+				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-			
-			if(resultList != null && resultList.size() != 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
-				resultJSON.put("Data", JSONArray.fromObject(resultList));
-				resultJSON.put("DataLen", result.get("TOTAL_CNT"));
-			}
-			else {
-				resultJSON.put("Code", 200);
-				resultJSON.put("Message", Message.code200);
-			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1411,52 +1502,59 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			projectName = projectName.replaceAll("&sbsp","/");
-			shareUser = shareUser.replace("&nbsp", "");
-			projectEditYes = projectEditYes.replace("&nbsp", "");
-			markerIcon = markerIcon.replace("&nbsp", "");
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("projectName", projectName);
-			param.put("shareType", shareType);
-			param.put("markerIcon", markerIcon);
-			resultIntegerValue = dataDao.insertProject(param);
-			
-			if(shareType != null && "2".equals(shareType) && shareUser != null && !"".equals(shareUser) && !"null".equals(shareUser)){
-				HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-			
-				String[] shareTList = shareUser.split(",");
-				tmpParam.put("shareTList", shareTList);
-				tmpParam.put("shareIdx", param.get("idx"));
-				tmpParam.put("shareKind", "GeoProject");
-				resultIntegerValue = userDao.insertShare(tmpParam);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes)){
-					String[] editList = projectEditYes.split(",");
-					tmpParam.put("editType", "Y");
-					tmpParam.put("editList", editList);
-					resultIntegerValue = userDao.updateShareEdit(tmpParam);
+				projectName = projectName.replaceAll("&sbsp","/");
+				shareUser = shareUser.replace("&nbsp", "");
+				projectEditYes = projectEditYes.replace("&nbsp", "");
+				markerIcon = markerIcon.replace("&nbsp", "");
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("projectName", projectName);
+				param.put("shareType", shareType);
+				param.put("markerIcon", markerIcon);
+				resultIntegerValue = dataDao.insertProject(param);
+				
+				if(shareType != null && "2".equals(shareType) && shareUser != null && !"".equals(shareUser) && !"null".equals(shareUser)){
+					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+				
+					String[] shareTList = shareUser.split(",");
+					tmpParam.put("shareTList", shareTList);
+					tmpParam.put("shareIdx", param.get("idx"));
+					tmpParam.put("shareKind", "GeoProject");
+					resultIntegerValue = userDao.insertShare(tmpParam);
+					
+					if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes)){
+						String[] editList = projectEditYes.split(",");
+						tmpParam.put("editType", "Y");
+						tmpParam.put("editList", editList);
+						resultIntegerValue = userDao.updateShareEdit(tmpParam);
+					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1483,112 +1581,114 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			projectName = projectName.replaceAll("&sbsp","/");
-			shareAddUser = shareAddUser.replace("&nbsp", "");
-			shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
-			projectEditYes = projectEditYes.replace("&nbsp", "");
-			projectEditNo = projectEditNo.replace("&nbsp", "");
-			markerIcon = markerIcon.replace("&nbsp", "").replace("&pbsp", ".");
-			
-			param.clear();
-			param.put("loginId", loginId);
-			param.put("projectName", projectName);
-			param.put("shareType", shareType);
-			param.put("idx", projectIdx);
-			param.put("markerIcon", markerIcon);
-			resultIntegerValue = dataDao.updateProject(param);
-			
-			if(resultIntegerValue == 1){
-				if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-					tmpParam.put("shareIdx", projectIdx);
-					tmpParam.put("shareKind", "GeoProject");
-					
-					if("2".equals(shareType)){
-						if(shareAddUser != null && !"".equals(shareAddUser) && !"null".equals(shareAddUser)){
-							String[] shareTList = shareAddUser.split(",");
-							tmpParam.put("shareTList", shareTList);
-							resultIntegerValue = userDao.insertShare(tmpParam);
-						}
-						if(shareRemoveUser != null && !"".equals(shareRemoveUser) && !"null".equals(shareRemoveUser)){
-							String[] shareTList = shareRemoveUser.split(",");
-							tmpParam.put("shareTList", shareTList);
-							resultIntegerValue = userDao.deleteShare(tmpParam);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				projectName = projectName.replaceAll("&sbsp","/");
+				shareAddUser = shareAddUser.replace("&nbsp", "");
+				shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
+				projectEditYes = projectEditYes.replace("&nbsp", "");
+				projectEditNo = projectEditNo.replace("&nbsp", "");
+				markerIcon = markerIcon.replace("&nbsp", "").replace("&pbsp", ".");
+				
+				param.clear();
+				param.put("loginId", loginId);
+				param.put("projectName", projectName);
+				param.put("shareType", shareType);
+				param.put("idx", projectIdx);
+				param.put("markerIcon", markerIcon);
+				resultIntegerValue = dataDao.updateProject(param);
+				
+				if(resultIntegerValue == 1){
+					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+						tmpParam.put("shareIdx", projectIdx);
+						tmpParam.put("shareKind", "GeoProject");
+						
+						if("2".equals(shareType)){
+							if(shareAddUser != null && !"".equals(shareAddUser) && !"null".equals(shareAddUser)){
+								String[] shareTList = shareAddUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.insertShare(tmpParam);
+							}
+							if(shareRemoveUser != null && !"".equals(shareRemoveUser) && !"null".equals(shareRemoveUser)){
+								String[] shareTList = shareRemoveUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								resultIntegerValue = userDao.deleteShare(tmpParam);
+							}
+							
+							if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes)){
+								String[] editList = projectEditYes.split(",");
+								tmpParam.put("editType", "Y");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+							
+							if(projectEditNo != null && !"".equals(projectEditNo) && !"null".equals(projectEditNo)){
+								String[] editList = projectEditNo.split(",");
+								tmpParam.put("editType", "N");
+								tmpParam.put("editList", editList);
+								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							}
+						}else{
+							resultIntegerValue += userDao.deleteShare(tmpParam);
 						}
 						
-						if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes)){
-							String[] editList = projectEditYes.split(",");
-							tmpParam.put("editType", "Y");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
+						//image 
+						HashMap<String, String> imgTmp = new HashMap<String, String>();
+						HashMap<String, Object> imgTmp2 = new HashMap<String, Object>();
+						imgTmp.put("projectIdx", projectIdx);
+						resultList = dataDao.selectProjectContentList(imgTmp);
 						
-						if(projectEditNo != null && !"".equals(projectEditNo) && !"null".equals(projectEditNo)){
-							String[] editList = projectEditNo.split(",");
-							tmpParam.put("editType", "N");
-							tmpParam.put("editList", editList);
-							resultIntegerValue = userDao.updateShareEdit(tmpParam);
-						}
-					}else{
-						resultIntegerValue += userDao.deleteShare(tmpParam);
-					}
-					
-					//image 
-					HashMap<String, String> imgTmp = new HashMap<String, String>();
-					HashMap<String, Object> imgTmp2 = new HashMap<String, Object>();
-					imgTmp.put("projectIdx", projectIdx);
-					resultList = dataDao.selectProjectContentList(imgTmp);
-					
-					if(resultList != null && resultList.size()>0){
-						for(int a=0;a<resultList.size();a++){
-							HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(a);
-							if(tmpMap != null){
-								//이미지 공유 타입 변경
-								tmpMap.put("moveContent", String.valueOf(tmpMap.get("IDX")));
-								tmpMap.put("shareType", shareType);
-								resultIntegerValue = dataDao.updateImageMove(tmpMap);
-//								tmpMap.put("title", tmpMap.get("TITLE"));
-//								tmpMap.put("content", tmpMap.get("CONTENT"));
-//								tmpMap.put("tabName", tmpMap.get("TABNAME"));
-//								tmpMap.put("xmlData", tmpMap.get("XMLDATA"));
-//								resultIntegerValue = dataDao.updateImage(tmpMap);
-								
-								//공유 유저 삭제
-								imgTmp2 = new HashMap<String, Object>();
-								imgTmp2.put("shareIdx", String.valueOf(tmpMap.get("IDX")));
-								imgTmp2.put("shareKind", tmpMap.get("DATAKIND"));
-								resultIntegerValue += userDao.deleteShare(imgTmp2);
-								
-								if("2".equals(shareType)){
-									//공유 유저 추가
-									imgTmp.put("shareIdx", String.valueOf(tmpMap.get("IDX")));
-									imgTmp.put("shareKind", tmpMap.get("DATAKIND"));
-									resultIntegerValue = userDao.insertShareFormProject(imgTmp);
+						if(resultList != null && resultList.size()>0){
+							for(int a=0;a<resultList.size();a++){
+								HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(a);
+								if(tmpMap != null){
+									//이미지 공유 타입 변경
+									tmpMap.put("moveContent", String.valueOf(tmpMap.get("IDX")));
+									tmpMap.put("shareType", shareType);
+									resultIntegerValue = dataDao.updateImageMove(tmpMap);
+									
+									//공유 유저 삭제
+									imgTmp2 = new HashMap<String, Object>();
+									imgTmp2.put("shareIdx", String.valueOf(tmpMap.get("IDX")));
+									imgTmp2.put("shareKind", tmpMap.get("DATAKIND"));
+									resultIntegerValue += userDao.deleteShare(imgTmp2);
+									
+									if("2".equals(shareType)){
+										//공유 유저 추가
+										imgTmp.put("shareIdx", String.valueOf(tmpMap.get("IDX")));
+										imgTmp.put("shareKind", tmpMap.get("DATAKIND"));
+										resultIntegerValue = userDao.insertShareFormProject(imgTmp);
+									}
+									
 								}
-								
 							}
 						}
 					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1609,77 +1709,84 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(moveProIS != null && !"".equals(moveProIS) && !"null".equals(moveProIS) && moveContentArr != null){
-				HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-				String[] tmpArr = moveProIS.split("_");
-				String proIdx = tmpArr[0];
-				String proShare = tmpArr[1];
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				String[] moveContentList = moveContentArr.split(",");
-				if(moveContentList != null && moveContentList.length > 0 && proIdx != null && proShare != null){
-					param.clear();
-					param.put("shareType", proShare);
-					param.put("projectIdx", proIdx);
-					for(int i=0; i<moveContentList.length; i++){
-						if(moveContentList[i] != null){
-							String[] tmpMv = moveContentList[i].split("_");
-							if(tmpMv[1] != null){
-								if("GeoPhoto".equals(tmpMv[1])){
-									param.put("moveContent", tmpMv[2]);
-									resultIntegerValue = dataDao.updateImageMove(param);
-									
-									//공유 유저 삭제
-									tmpParam = new HashMap<String, Object>();
-									tmpParam.put("shareIdx", tmpMv[2]);
-									tmpParam.put("shareKind","GeoPhoto");
-									resultIntegerValue += userDao.deleteShare(tmpParam);
-									
-									if("2".equals(proShare)){
-										//공유 유저 추가
-										param.put("shareIdx", String.valueOf(tmpMv[2]));
-										param.put("shareKind", "GeoPhoto");
-										resultIntegerValue += userDao.insertShareFormProject(param);
-									}
-								}else if("GeoVideo".equals(tmpMv[1])){
-									param.put("moveContent", tmpMv[2]);
-									resultIntegerValue = dataDao.updateVideoMove(param);
-									
-									//공유 유저 삭제
-									tmpParam = new HashMap<String, Object>();
-									tmpParam.put("shareIdx", tmpMv[2]);
-									tmpParam.put("shareKind","GeoVideo");
-									resultIntegerValue += userDao.deleteShare(tmpParam);
-									
-									if("2".equals(proShare)){
-										//공유 유저 추가
-										param.put("shareIdx", String.valueOf(tmpMv[2]));
-										param.put("shareKind", "GeoVideo");
-										resultIntegerValue += userDao.insertShareFormProject(param);
+				if(moveProIS != null && !"".equals(moveProIS) && !"null".equals(moveProIS) && moveContentArr != null){
+					HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+					String[] tmpArr = moveProIS.split("_");
+					String proIdx = tmpArr[0];
+					String proShare = tmpArr[1];
+					
+					String[] moveContentList = moveContentArr.split(",");
+					if(moveContentList != null && moveContentList.length > 0 && proIdx != null && proShare != null){
+						param.clear();
+						param.put("shareType", proShare);
+						param.put("projectIdx", proIdx);
+						for(int i=0; i<moveContentList.length; i++){
+							if(moveContentList[i] != null){
+								String[] tmpMv = moveContentList[i].split("_");
+								if(tmpMv[1] != null){
+									if("GeoPhoto".equals(tmpMv[1])){
+										param.put("moveContent", tmpMv[2]);
+										resultIntegerValue = dataDao.updateImageMove(param);
+										
+										//공유 유저 삭제
+										tmpParam = new HashMap<String, Object>();
+										tmpParam.put("shareIdx", tmpMv[2]);
+										tmpParam.put("shareKind","GeoPhoto");
+										resultIntegerValue += userDao.deleteShare(tmpParam);
+										
+										if("2".equals(proShare)){
+											//공유 유저 추가
+											param.put("shareIdx", String.valueOf(tmpMv[2]));
+											param.put("shareKind", "GeoPhoto");
+											resultIntegerValue += userDao.insertShareFormProject(param);
+										}
+									}else if("GeoVideo".equals(tmpMv[1])){
+										param.put("moveContent", tmpMv[2]);
+										resultIntegerValue = dataDao.updateVideoMove(param);
+										
+										//공유 유저 삭제
+										tmpParam = new HashMap<String, Object>();
+										tmpParam.put("shareIdx", tmpMv[2]);
+										tmpParam.put("shareKind","GeoVideo");
+										resultIntegerValue += userDao.deleteShare(tmpParam);
+										
+										if("2".equals(proShare)){
+											//공유 유저 추가
+											param.put("shareIdx", String.valueOf(tmpMv[2]));
+											param.put("shareKind", "GeoVideo");
+											resultIntegerValue += userDao.insertShareFormProject(param);
+										}
 									}
 								}
 							}
 						}
 					}
 				}
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
@@ -1699,30 +1806,37 @@ public class DataAPI  {
 		//token
 		param.clear();
 		param.put("token", token);
-		result = userDao.selectUid(param);
 		
-		if(result != null){
-			//update token time
-			param.put("uid", String.valueOf(result.get("UID")));
-			resultIntegerValue = userDao.updateTokenTime(param);
+		try {
+			result = userDao.selectUid(param);
 			
-			if(projectIdx != null && !"".equals(projectIdx) && !"null".equals(projectIdx)){
-				param.clear();
-				param.put("loginId", loginId);
-				param.put("projectIdx", projectIdx);
-				resultIntegerValue = dataDao.deleteProject(param);
-			}
-			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
+			if(result != null){
+				//update token time
+				param.put("uid", String.valueOf(result.get("UID")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				if(projectIdx != null && !"".equals(projectIdx) && !"null".equals(projectIdx)){
+					param.clear();
+					param.put("loginId", loginId);
+					param.put("projectIdx", projectIdx);
+					resultIntegerValue = dataDao.deleteProject(param);
+				}
+				
+				if(resultIntegerValue > 0) {
+					resultJSON.put("Code", 100);
+					resultJSON.put("Message", Message.code100);
+				}else{
+					resultJSON.put("Code", 300);
+					resultJSON.put("Message", Message.code300);
+				}
 			}else{
-				resultJSON.put("Code", 300);
-				resultJSON.put("Message", Message.code300);
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
 			}
-		}else{
-			resultJSON.put("Code", 203);
-			resultJSON.put("Message", Message.code203);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
 		}
 		
 		return callback + "(" + resultJSON.toString() + ")";
