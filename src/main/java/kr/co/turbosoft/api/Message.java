@@ -1,35 +1,35 @@
 package kr.co.turbosoft.api;
 
 public class Message {
-	public static String code100 = "Á¤»óÃ³¸® µÇ¾ú½À´Ï´Ù.";
-	public static String code101 = "°¡ÀÔÇÒ ¼ö ÀÖ´Â ¾ÆÀÌµğÀÔ´Ï´Ù.";
-	public static String code102 = "ÀÌ¹Ì °¡ÀÔµÈ ¾ÆÀÌµğÀÔ´Ï´Ù.";
-	public static String code103 = "°¡ÀÔÇÒ ¼ö ÀÖ´Â ÀÌ¸ŞÀÏÀÔ´Ï´Ù.";
-	public static String code104 = "ÀÌ¹Ì °¡ÀÔµÈ ÀÌ¸ŞÀÏÀÔ´Ï´Ù.";
-	public static String code105 = "È¸¿ø Á¤º¸°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.";
-	public static String code200 = "µ¥ÀÌÅÍ°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.";
+	public static String code100 = "ì •ìƒì²˜ë¦¬ ë˜ì—ˆìŠµë‹ˆë‹¤.";
+	public static String code101 = "ê°€ì…í•  ìˆ˜ ìˆëŠ” ì•„ì´ë””ì…ë‹ˆë‹¤.";
+	public static String code102 = "ì´ë¯¸ ê°€ì…ëœ ì•„ì´ë””ì…ë‹ˆë‹¤.";
+	public static String code103 = "ê°€ì…í•  ìˆ˜ ìˆëŠ” ì´ë©”ì¼ì…ë‹ˆë‹¤.";
+	public static String code104 = "ì´ë¯¸ ê°€ì…ëœ ì´ë©”ì¼ì…ë‹ˆë‹¤.";
+	public static String code105 = "íšŒì› ì •ë³´ê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.";
+	public static String code200 = "ë°ì´í„°ê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.";
 	
-	public static String code202 = "Session Token Ã³¸® ¿À·ùÀÔ´Ï´Ù.";
-	public static String code203 = "Session TokenÀÌ ¸¸·áµÇ¾ú½À´Ï´Ù.";
+	public static String code202 = "Session Token ì²˜ë¦¬ ì˜¤ë¥˜ì…ë‹ˆë‹¤.";
+	public static String code203 = "Session Tokenì´ ë§Œë£Œë˜ì—ˆìŠµë‹ˆë‹¤.";
 	
-	public static String code300 = "µ¥ÀÌÅÍº£ÀÌ½º Ã³¸® ¿À·ùÀÔ´Ï´Ù.";
-	public static String code500 = "°ü¸®ÀÚ¸¸ »ç¿ë°¡´ÉÇÑ ¸Ş´ºÀÔ´Ï´Ù.";
-	public static String code400 = "ÆÄÀÏ Ã³¸® ¿À·ùÀÔ´Ï´Ù.";
+	public static String code300 = "ë°ì´í„°ë² ì´ìŠ¤ ì²˜ë¦¬ ì˜¤ë¥˜ì…ë‹ˆë‹¤.";
 	
-	
-	
-	public static String code201 = "ºñ¹Ğ¹øÈ£°¡ ´Ù¸¨´Ï´Ù.";
+	public static String code500 = "ê´€ë¦¬ìë§Œ ì‚¬ìš©ê°€ëŠ¥í•œ ë©”ë‰´ì…ë‹ˆë‹¤.";
+	public static String code400 = "íŒŒì¼ ì²˜ë¦¬ ì˜¤ë¥˜ì…ë‹ˆë‹¤.";
 	
 	
 	
+	public static String code201 = "ë¹„ë°€ë²ˆí˜¸ê°€ ë‹¤ë¦…ë‹ˆë‹¤.";
 	
-	public static String code900 = "ÇÏÀ§ ¹öÀü »ç¿ëÀÚÀÔ´Ï´Ù. ¾ÛÀ» ¾÷µ¥ÀÌÆ® ¹ŞÀ¸½Ã±â ¹Ù¶ø´Ï´Ù.";
+	public static String code800 = "ì‹œìŠ¤í…œ ì˜¤ë¥˜ì…ë‹ˆë‹¤. ì˜¤ë¥˜ë©”ì‹œì§€ë¥¼ í™•ì¸í•´ ì£¼ì„¸ìš”.";
 	
-	//µî·ÏµÈ ÀÇ»ç ¸éÇã È®ÀÎ message
-	public static String code801 = "ÀÌ¹Ì µî·ÏµÈ ÀÇ»ç¸éÇãÀÔ´Ï´Ù.";
-	public static String code802 = "¿¹¾àÀÏÀÌ ÁöÁ¤µÇÁö ¾Ê¾Ò½À´Ï´Ù.";
-	public static String code803 = "¿¹¾àÀÏÀÌ Áö³µ½À´Ï´Ù.";
+	public static String code900 = "í•˜ìœ„ ë²„ì „ ì‚¬ìš©ìì…ë‹ˆë‹¤. ì•±ì„ ì—…ë°ì´íŠ¸ ë°›ìœ¼ì‹œê¸° ë°”ëë‹ˆë‹¤.";
 	
-	public static String code901 = "ÀÎÁõµÇÁö ¾ÊÀº »ç¿ëÀÚÀÔ´Ï´Ù.";
+	//ë“±ë¡ëœ ì˜ì‚¬ ë©´í—ˆ í™•ì¸ message
+	public static String code801 = "ì´ë¯¸ ë“±ë¡ëœ ì˜ì‚¬ë©´í—ˆì…ë‹ˆë‹¤.";
+	public static String code802 = "ì˜ˆì•½ì¼ì´ ì§€ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.";
+	public static String code803 = "ì˜ˆì•½ì¼ì´ ì§€ë‚¬ìŠµë‹ˆë‹¤.";
+	
+	public static String code901 = "ì¸ì¦ë˜ì§€ ì•Šì€ ì‚¬ìš©ìì…ë‹ˆë‹¤.";
 	
 }
