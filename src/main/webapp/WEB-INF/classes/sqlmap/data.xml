@@ -196,11 +196,11 @@
     	UPDATE
     		GEOCMS_BOARD_CONTENT
     	SET
+	    	 UDATE 		= NOW()
     		,TITLE 		= '${title}'
     		,CONTENT 	= '${content}'
     		,FILENAME	= '${files}'
-    		,FILEPATH	= '${filePath}'
-    		,UDATE 		= NOW()
+    		,FILEPATH	= '${filePath}'    		
     		,TABNAME 	= '${tabName}'
     		,SHARETYPE 	=  ${shareType}
     	WHERE 
