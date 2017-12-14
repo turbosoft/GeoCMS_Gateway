@@ -1,6 +1,9 @@
 package kr.co.turbosoft.api;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -296,8 +299,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
+				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'") ; }
+				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'") ; }
 				if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
 				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
 				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
@@ -386,8 +389,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
+				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'") ; }
+				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'") ; }
 				if(filePath != null && !"".equals(filePath) && !"null".equals(filePath)){ filePath = filePath.replaceAll("&sbsp","/"); }
 				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
 				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){ removeShare = removeShare.replaceAll("&nbsp",""); }
@@ -636,8 +639,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/");
-				content = content.replaceAll("&sbsp","/");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				longitude = longitude.replace("&nbsp", "");
 				latitude = latitude.replace("&nbsp", "");
 				filePath = filePath.replaceAll("&sbsp","/");
@@ -728,8 +731,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/");
-				content = content.replaceAll("&sbsp","/");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				addShareUser = addShareUser.replace("&nbsp", "");
 				removeShareUser = removeShareUser.replace("&nbsp", "");
 				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
@@ -1182,8 +1185,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/");
-				content = content.replaceAll("&sbsp","/");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				longitude = longitude.replace("&nbsp", "");
 				latitude = latitude.replace("&nbsp", "");
 				filePath = filePath.replaceAll("&sbsp","/");
@@ -1281,8 +1284,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/");
-				content = content.replaceAll("&sbsp","/");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				addShareUser = addShareUser.replace("&nbsp", "");
 				removeShareUser = removeShareUser.replace("&nbsp", "");
 				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
@@ -1511,7 +1514,7 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				projectName = projectName.replaceAll("&sbsp","/");
+				projectName = projectName.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				shareUser = shareUser.replace("&nbsp", "");
 				projectEditYes = projectEditYes.replace("&nbsp", "");
 				markerIcon = markerIcon.replace("&nbsp", "");
@@ -1590,7 +1593,7 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				projectName = projectName.replaceAll("&sbsp","/");
+				projectName = projectName.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
 				shareAddUser = shareAddUser.replace("&nbsp", "");
 				shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
 				projectEditYes = projectEditYes.replace("&nbsp", "");
