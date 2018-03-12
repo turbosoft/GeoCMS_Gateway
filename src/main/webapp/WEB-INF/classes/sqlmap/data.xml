@@ -21,6 +21,8 @@
     		,OPENAPI			= '${openAPI}'
     		,LATESTVIEW			= '${latestView}'
     		,MAPZOOM 			= '${mapZoom}'
+    		,LATITUDE 			= '${latitude}'
+    		,LONGITUDE 			= '${longitude}'
     </update>
     
     <update id="updateTabNameBoard" parameterType="paramMap">
@@ -196,11 +198,11 @@
     	UPDATE
     		GEOCMS_BOARD_CONTENT
     	SET
-	    	 UDATE 		= NOW()
+    		UDATE 		= NOW()
     		,TITLE 		= '${title}'
     		,CONTENT 	= '${content}'
     		,FILENAME	= '${files}'
-    		,FILEPATH	= '${filePath}'    		
+    		,FILEPATH	= '${filePath}'
     		,TABNAME 	= '${tabName}'
     		,SHARETYPE 	=  ${shareType}
     	WHERE 
