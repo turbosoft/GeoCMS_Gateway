@@ -73,7 +73,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateBase/{token}/{contentTab}/{contentTabType}/{boardTab}/{contentNum}/{boardNum}/{openAPI}/{latestView}/{mapZoom}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateBase/{token}/{contentTab}/{contentTabType}/{boardTab}/{contentNum}/{boardNum}/{openAPI}/{latestView}/{latitude}/{longitude}/{mapZoom}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateBaseService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -84,6 +84,8 @@ public class DataAPI  {
 			, @PathVariable("boardNum") String boardNum
 			, @PathVariable("openAPI") String openAPI
 			, @PathVariable("latestView") String latestView
+			, @PathVariable("latitude") String latitude
+			, @PathVariable("longitude") String longitude
 			, @PathVariable("mapZoom") String mapZoom
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
@@ -103,6 +105,8 @@ public class DataAPI  {
 					param.put("boardNum", boardNum);
 					param.put("openAPI", openAPI);
 					param.put("latestView", latestView);
+					param.put("latitude", latitude);
+					param.put("longitude", longitude);
 					param.put("mapZoom", mapZoom);
 					
 					resultIntegerValue = dataDao.updateBase(param);
