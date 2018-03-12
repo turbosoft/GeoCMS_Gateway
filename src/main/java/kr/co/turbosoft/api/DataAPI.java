@@ -643,8 +643,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
-				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
 				longitude = longitude.replace("&nbsp", "");
 				latitude = latitude.replace("&nbsp", "");
 				filePath = filePath.replaceAll("&sbsp","/");
@@ -735,8 +735,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
-				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
 				addShareUser = addShareUser.replace("&nbsp", "");
 				removeShareUser = removeShareUser.replace("&nbsp", "");
 				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
@@ -1189,8 +1189,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
-				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
 				longitude = longitude.replace("&nbsp", "");
 				latitude = latitude.replace("&nbsp", "");
 				filePath = filePath.replaceAll("&sbsp","/");
@@ -1288,8 +1288,8 @@ public class DataAPI  {
 				param.put("uid", String.valueOf(result.get("UID")));
 				resultIntegerValue = userDao.updateTokenTime(param);
 				
-				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
-				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'");
+				title = title.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
+				content = content.replaceAll("&sbsp","/").replaceAll("&amp", "&").replaceAll("&amp", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("'", "\\\\'").replaceAll("&rnsp", "\r").replaceAll("&nnsp", "\n");
 				addShareUser = addShareUser.replace("&nbsp", "");
 				removeShareUser = removeShareUser.replace("&nbsp", "");
 				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
