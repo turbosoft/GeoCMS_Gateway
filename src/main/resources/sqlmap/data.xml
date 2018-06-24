@@ -8,11 +8,13 @@
         	LATESTVIEW,
         	MAPZOOM,
         	USERLEVEL,
+        	LATITUDE,
+        	LONGITUDE,
         	NULL AS TABIDX,
-			NULL AS 	TABNAME,
-			NULL AS 	TABHEIGHT,
-			NULL AS 	TABTYPE,
-			NULL AS 	TABGROUP
+			NULL AS TABNAME,
+			NULL AS TABHEIGHT,
+			NULL AS TABTYPE,
+			NULL AS TABGROUP
         FROM 
         	GEOCMS_SETTING
         UNION
@@ -21,6 +23,8 @@
         	NULL AS LATESTVIEW,
         	NULL AS MAPZOOM,
         	NULL AS USERLEVEL,
+        	NULL AS LATITUDE,
+        	NULL AS LONGITUDE,
 			TABIDX,
 			TABNAME,
 			TABHEIGHT,
@@ -32,6 +36,26 @@
 			OPENAPI, TABIDX
     </select>
     
+    <insert id="insertBase" parameterType="paramMap">
+        INSERT INTO GEOCMS_SETTING
+        (
+        	OPENAPI,
+        	LATESTVIEW,
+        	MAPZOOM,
+        	USERLEVEL,
+        	LATITUDE,
+        	LONGITUDE
+        )
+        VALUES
+        (	 '${openAPI}'
+        	,'${latestView}'
+        	, ${mapZoom}
+        	,'ADMIN,DELETE,MODIFY,WRITE'
+        	,'${latitude}'
+        	,'${longitude}'
+        )
+    </insert>
+    
     <update id="updateBase" parameterType="paramMap">
     	UPDATE
     		GEOCMS_SETTING
@@ -39,6 +63,8 @@
     		 OPENAPI			= '${openAPI}'
     		,LATESTVIEW			= '${latestView}'
     		,MAPZOOM 			= '${mapZoom}'
+    		,LATITUDE 			= '${latitude}'
+    		,LONGITUDE 			= '${longitude}'
     </update>
     
     <select id="selectTabList" parameterType="paramMap" resultType="resultMap">
@@ -118,7 +144,6 @@
        			${removeList.idx}
        		</foreach>
        	</if>
-    		
     </delete>
     
     <update id="updateTabIdxBoard" parameterType="paramMap">
@@ -287,6 +312,7 @@
         	,RDATE
         	,UDATE
         	,SHARETYPE
+        	,TABIDX
         )
         VALUES
         (
@@ -297,6 +323,7 @@
         	, NOW()
         	, NOW()
         	, ${shareType}
+        	, ${tabIdx}
         )
         <selectKey keyProperty="idx" resultType="int" order="AFTER">
         	SELECT CURRVAL (pg_get_serial_sequence ('GEOCMS_BOARD_CONTENT', 'idx'))
@@ -838,7 +865,9 @@
     		GEOCMS_IMAGE_CONTENT
     	SET
     		  UDATE			=  NOW()
+    		<if test="title != null and title != ''">
     		 ,XMLDATA		= '${xmlData}'
+    		</if>
     		<if test="title != null and title != ''">
     			,TITLE			= '${title}'
     		</if>
@@ -1086,7 +1115,9 @@
     		GEOCMS_VIDEO_CONTENT
     	SET
     		  UDATE			=  NOW()
+    		<if test="xmlData != null and xmlData != ''">
     		 ,XMLDATA		= '${xmlData}'
+    		</if>
     		<if test="title != null and title != ''">
     			,TITLE			= '${title}'
     		</if>
@@ -1104,6 +1135,9 @@
     		</if>
     		<if test="longitude != null and longitude != ''">
     			,LONGITUDE		=  ${longitude}
+    		</if>
+    		<if test="gpsData != null and gpsData != ''">
+    			,GPSDATA		=  '${gpsData}'
     		</if>
     	WHERE 
     		1 = 1
@@ -1664,6 +1698,7 @@
 	    	,PARENTIDX
 	    	,STATUS
 	    	,(select projectidx from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx ) PROJECTIDX
+	    	,(select gpsdata from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) GPSDATA
 	    FROM
 	    	GEOCMS_CONTENT_CHILD
 		WHERE
@@ -1831,5 +1866,165 @@
     			${fileIdxs}
     		</foreach>
     </update>
+    
+    <select id="selectServer" parameterType="paramMap" resultType="resultMap">
+        SELECT 
+        	IDX,
+        	ID,
+        	SERVERNAME,
+        	SERVERURL,
+        	SERVERPORT,
+        	SERVERID,
+        	SERVERPASS,
+        	SERVERPATH,
+        	SERVERVIEWPORT,
+        	SELECTYN,
+        	RDATE,
+        	UDATE
+        FROM 
+        	GEOCMS_SERVER
+		WHERE
+			1 = 1        	
+        <if test="saveIdxArr != null">
+       		<foreach collection="saveIdxArr" item="saveIdxArr" open= "AND IDX NOT IN (" separator =","  close=")" >
+       			${saveIdxArr}
+       		</foreach>
+       	</if>
+       	<if test="idx != null and idx != ''">
+       		AND IDX = ${idx}
+       	</if>
+       	<if test="serverName != null and serverName != ''">
+       		AND SERVERNAME = '${serverName}'
+       	</if>
+       	<if test="serverUrl != null and serverUrl != ''">
+       		AND SERVERURL = '${serverUrl}'
+       	</if>
+       	<if test="serverPort != null and serverPort != ''">
+       		AND SERVERPORT = '${serverPort}'
+       	</if>
+       	<if test="serverPass != null and serverPass != ''">
+       		AND SERVERPASS = '${serverPass}'
+       	</if>
+       	<if test="serverPath != null and serverPath != ''">
+       		AND SERVERPATH = '${serverPath}'
+       	</if>
+       	<if test="serverViewPort != null and serverViewPort != ''">
+       		AND SERVERVIEWPORT = '${serverViewPort}'
+       	</if>
+       	<if test="selectYN != null and selectYN != ''">
+       		AND SELECTYN = '${selectYN}'
+       	</if>
+		ORDER BY
+			COALESCE(SELECTYN,'N') DESC, UDATE DESC
+    </select>
+    
+    <insert id="insertServer" parameterType="paramMap">
+        INSERT INTO GEOCMS_SERVER
+        (
+        	ID,
+        	SERVERNAME,
+        	SERVERPATH,
+        	<if test="serverUrl != null and serverUrl != ''">
+        		SERVERURL,
+        	</if>
+        	<if test="serverPort != null and serverPort != ''">
+        		SERVERPORT,
+        	</if>
+        	<if test="serverId != null and serverId != ''">
+        		SERVERID,
+        	</if>
+        	<if test="serverPass != null and serverPass != ''">
+        		SERVERPASS,
+        	</if>
+        	<if test="serverViewPort != null and serverViewPort != ''">
+        		SERVERVIEWPORT,
+        	</if>
+        	<if test="selectYN != null and selectYN != ''">
+        		SELECTYN,
+        	</if>
+        	RDATE,
+        	UDATE
+        )
+        VALUES
+        (	 '${loginId}'
+        	,'${serverName}'
+        	,'${serverPath}'
+        	<if test="serverUrl != null and serverUrl != ''">
+        		,'${serverUrl}'
+        	</if>
+        	<if test="serverPort != null and serverPort != ''">
+        		, ${serverPort}
+        	</if>
+        	<if test="serverId != null and serverId != ''">
+        		,'${serverId}'
+        	</if>
+        	<if test="serverPass != null and serverPass != ''">
+        		,'${serverPass}'
+        	</if>
+        	<if test="serverViewPort != null and serverViewPort != ''">
+        		,'${serverViewPort}'
+        	</if>
+        	<if test="selectYN != null and selectYN != ''">
+        		,'${selectYN}'
+        	</if>
+        	, now()
+        	, now()
+        )
+    </insert>
+    
+    <update id="updateServer" parameterType="paramMap">
+    	UPDATE
+    		GEOCMS_SERVER
+    	SET
+    			ID					= '${loginId}'
+    		<if test="serverName != null and serverName != ''">
+    			,SERVERNAME			= '${serverName}'
+    		</if>
+    		<if test="serverUrl != null and serverUrl != ''">
+    			,SERVERURL 			= '${serverUrl}'
+    		</if>
+    		<if test="serverPort != null and serverPort != ''">
+    			,SERVERPORT			=  ${serverPort}
+    		</if>
+    		<if test="serverId != null and serverId != ''">
+    			,SERVERID 			= '${serverId}'
+    		</if>
+    		<if test="serverPass != null and serverPass != ''">
+    			,SERVERPASS			= '${serverPass}'
+    		</if>
+    		<if test="serverPath != null and serverPath != ''">
+    			,SERVERPATH 		= '${serverPath}'
+    		</if>
+    		<if test="serverViewPort != null and serverViewPort != ''">
+    			,SERVERVIEWPORT 		= '${serverViewPort}'
+    		</if>
+    		<if test="selectYN != null and selectYN != ''">
+    			,SELECTYN 			= '${selectYN}'
+    		</if>
+    			,UDATE 				= now()
+    	WHERE
+    		<choose>
+				<when test="isAll != null and isAll != '' and isAll.equalsIgnoreCase('Y')">
+					1 = 1
+				</when>
+				<otherwise>
+					idx = ${idx}
+				</otherwise>
+			</choose>
+    </update>
+    
+    <delete id="deleteServer">
+    	DELETE
+    		FROM
+    			GEOCMS_SERVER
+    	WHERE
+    		1 = 1
+    	<if test="removeList != null">
+       		<foreach collection="removeList" item="removeList" open= "AND IDX IN (" separator =","  close=")" >
+       			${removeList}
+       		</foreach>
+       	</if>
+    		
+    </delete>
 	
 </mapper>
