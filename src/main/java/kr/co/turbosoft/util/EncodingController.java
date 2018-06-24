@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.text.StyledEditorKit.BoldAction;
+
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
@@ -23,41 +25,43 @@ public class EncodingController extends Thread{
 	private List<Map<String, Object>> fileNameList;
 	
 	private String saveUserPath;
-	private String serverUrlStr;
-	private String userIdStr;
-	private String userPassStr;
-	private String portNumStr;
-	private String saveFilePathStr;
+	private String b_serverUrl;
+	private String b_serverId;
+	private String b_serverPass;
+	private String b_serverPort;
+	private String b_serverPath;
+	private boolean isServerUrl;
 	
 	public void setDataAPI(DataDao dataDao){
 		this.dataDao = dataDao;
 	}
 	
 	public EncodingController(String loginId, String logKey, List<Map<String, Object>> fileNameList,
-			String saveUserPath, String serverUrlStr, String userIdStr, String userPassStr, String portNumStr, String saveFilePathStr) {
+			String saveUserPath, String b_serverUrl, String b_serverId, String b_serverPass, String b_serverPort, String b_serverPath, boolean isServerUrl) {
         this.loginId = loginId;
         this.logKey = logKey;
         this.fileNameList = fileNameList;
         this.saveUserPath = saveUserPath;
-        this.serverUrlStr = serverUrlStr;
-        this.userIdStr = userIdStr;
-        this.userPassStr = userPassStr;
-        this.portNumStr = portNumStr;
-        this.saveFilePathStr = saveFilePathStr;
+        this.b_serverUrl = b_serverUrl;
+        this.b_serverId = b_serverId;
+        this.b_serverPass = b_serverPass;
+        this.b_serverPort = b_serverPort;
+        this.b_serverPath = b_serverPath;
+        this.isServerUrl = isServerUrl;
     }
 	
 	@Override
 	public void run() {
         System.out.println("thread run.");
 		
-        List<Object> removeList = new ArrayList<Object>();
         Map<String, Object> fileNameMap = new HashMap<String, Object>();
 		HashMap<String, String> param = new HashMap<String, String>();
 		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		ArrayList<Object> resIdx = new ArrayList<Object>();
 		String fileNameStr = "";
+		List<String> removeFileList = new ArrayList<String>();
 		
-		File userTempDir = new File(saveUserPath+File.separator+"GeoVideo"+File.separator+ loginId +"_"+ logKey);
+		File userTempDir = new File(saveUserPath+File.separator+"GeoVideo");
 		
 		param.put("loginId", loginId);
 		param.put("idx", logKey);
@@ -92,44 +96,47 @@ public class EncodingController extends Thread{
 					}
 				}
 				
-				ftp = new FTPClient(); // FTP Client 객체 생성 
-				ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-				ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
-				
-				reply = ftp.getReplyCode();//
-				if(!FTPReply.isPositiveCompletion(reply)) {
-					ftp.disconnect();
-					ftpError(param);
-					return;
-			    }
-				
-				if(!ftp.login(userIdStr, userPassStr)) {
-					ftp.logout();
-					ftpError(param);
-					return;
-			    }
-				
-				ftp.setFileType(FTP.BINARY_FILE_TYPE);
-				ftp.enterLocalPassiveMode();
-			    
+				if(isServerUrl){
+					ftp = new FTPClient(); // FTP Client 객체 생성 
+					ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+					ftp.setConnectTimeout(3000);
+					ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+					
+					reply = ftp.getReplyCode();//
+					if(!FTPReply.isPositiveCompletion(reply)) {
+						ftp.disconnect();
+						ftpError(param);
+						return;
+				    }
+					
+					if(!ftp.login(b_serverId, b_serverPass)) {
+						ftp.logout();
+						ftpError(param);
+						return;
+				    }
+					
+					ftp.setFileType(FTP.BINARY_FILE_TYPE);
+					ftp.enterLocalPassiveMode();
+				    
 
-			    ftp.changeWorkingDirectory(saveFilePathStr+"/"+uploadType); // 작업 디렉토리 변경
-			    reply = ftp.getReplyCode();
-			    if (reply == 550) {
-			    	ftp.makeDirectory(saveFilePathStr+"/"+uploadType);
-			    	reply = ftp.getReplyCode();
-			    	if (reply == 550) {
-			    		ftpError(param);
-						return;
-			    	}
-			    	ftp.changeWorkingDirectory(saveFilePathStr+"/"+uploadType); // 작업 디렉토리 변경
-			    	reply = ftp.getReplyCode();
-			    	if (reply == 550) {
-			    		ftpError(param);
-						return;
-			    	}
-			    }
-			    System.out.println("fileNameStrCnt ");
+				    ftp.changeWorkingDirectory(b_serverPath+"/"+uploadType); // 작업 디렉토리 변경
+				    reply = ftp.getReplyCode();
+				    if (reply == 550) {
+				    	ftp.makeDirectory(b_serverPath+"/"+uploadType);
+				    	reply = ftp.getReplyCode();
+				    	if (reply == 550) {
+				    		ftpError(param);
+							return;
+				    	}
+				    	ftp.changeWorkingDirectory(b_serverPath+"/"+uploadType); // 작업 디렉토리 변경
+				    	reply = ftp.getReplyCode();
+				    	if (reply == 550) {
+				    		ftpError(param);
+							return;
+				    	}
+				    }
+				}
+				
 			    int fileNameStrCnt = 0;
 			    File checkFile = null;
 			    File checkFile2 = null;
@@ -145,14 +152,19 @@ public class EncodingController extends Thread{
 			    	try{
 			    		fileNameStr = String.valueOf(tmpFileMap.get("file"));
 			    		thumFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_thumb.jpg";
-			    		oggFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_ogg.ogg";
-			    		gpxFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_ogg.gpx";
-			    		gpxModifyFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_ogg_modify.gpx";
+			    		oggFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_mp4.mp4";
+			    		gpxFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + ".txt";
+			    		gpxModifyFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_modify.txt";
 			    		tmpFileList = new ArrayList<String>();
 			    		tmpFileList.add(thumFile);
 			    		tmpFileList.add(oggFile);
 			    		tmpFileList.add(gpxFile);
 			    		tmpFileList.add(gpxModifyFile);
+			    		//removeFileList
+			    		removeFileList.add(thumFile);
+			    		removeFileList.add(oggFile);
+			    		removeFileList.add(gpxFile);
+			    		removeFileList.add(gpxModifyFile);
 			    		
 			    		for(int k=0; k<tmpFileList.size();k++){
 			    			if(k < 2 || fileNameStrCnt == 0 && k == 2  || k == 3){
@@ -175,7 +187,11 @@ public class EncodingController extends Thread{
 			    				if(fis != null){
 //			    					ftpfileName = tmpFileList.get(k).substring(tmpFileList.get(k).lastIndexOf("\\")+1);	//git
 			    					ftpfileName = tmpFileList.get(k).substring(tmpFileList.get(k).lastIndexOf(File.separator)+1);	//linux
-								    isSuccess = ftp.storeFile(ftpfileName, fis);
+			    					if(isServerUrl){
+			    						isSuccess = ftp.storeFile(ftpfileName, fis);
+			    					}else{
+			    						isSuccess = true;
+			    					}
 								    
 								    if(k == 1){
 								    	checkFile = new File(tmpFileList.get(2));
@@ -206,7 +222,9 @@ public class EncodingController extends Thread{
 			    		}
 					} catch(IOException ie) {
 						ie.printStackTrace(); 
-						ftpError(param);
+						if(isServerUrl){
+							ftpError(param);	
+						}
 						return;
 					} finally {
 						if(fis != null) {
@@ -214,28 +232,32 @@ public class EncodingController extends Thread{
 								fis.close();
 							} catch(IOException ie) {
 								ie.printStackTrace();
-								ftpError(param);
+								if(isServerUrl){
+									ftpError(param);	
+								}
 								return;
 							}
 						}
 					}
 			    }
+			    
 			    param.put("status", "COMPLETE");
 		    	dataDao.updateLog(param);
 		    	
 				
 			}catch(Exception e){
 				e.printStackTrace();
-				ftpError(param);
+				if(isServerUrl){
+					ftpError(param);	
+				}
 			}finally{
-				if(userTempDir.exists()){
-			    	File[] contents = userTempDir.listFiles();
-			    	if (contents != null) {
-			            for (File f : contents) {
-			            	f.delete();
-			            }
-			        }
-					userTempDir.delete();
+				if(isServerUrl && userTempDir.exists() && removeFileList != null){
+					for(String rFile: removeFileList){
+						File t1 = new File(rFile);
+						if(t1.exists()){
+							t1.delete();
+						}
+					}
 				}
 			}
 		}
@@ -243,9 +265,15 @@ public class EncodingController extends Thread{
 	
 	public void ftpError(HashMap<String, String> param){
 		List<Object> removeList = new ArrayList<Object>();
+		List<String> removeFileList = new ArrayList<String>();
 		Map<String, Object> fileNameMap = new HashMap<String, Object>();
-		File userTempDir = new File(saveUserPath+File.separator+"GeoVideo"+File.separator+ loginId +"_"+ logKey);
+		File userTempDir = new File(saveUserPath+File.separator+"GeoVideo");
 		HashMap<String, Object> objParam = new HashMap<String, Object>();
+		String fileNameStr = "";
+		String thumFile = "";
+		String oggFile = "";
+		String gpxFile = "";
+		String gpxModifyFile = "";
 		
 		param.put("status", "ERROR");
 		dataDao.updateLog(param);
@@ -253,20 +281,29 @@ public class EncodingController extends Thread{
 	    for(int m=0;m<fileNameList.size();m++){
 	    	fileNameMap = fileNameList.get(m);
 	    	removeList.add(fileNameMap.get("idx"));
+	    	
+	    	fileNameStr = String.valueOf(fileNameMap.get("file"));
+	    	thumFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_thumb.jpg";
+    		oggFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_mp4.mp4";
+    		gpxFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + ".txt";
+    		gpxModifyFile = fileNameStr.substring(0,fileNameStr.lastIndexOf(".")) + "_modify.txt";
+    		removeFileList.add(thumFile);
+    		removeFileList.add(oggFile);
+    		removeFileList.add(gpxFile);
+    		removeFileList.add(gpxModifyFile);
 	    }
 	    
 	    objParam.put("fileIdxs", removeList);
 	    objParam.put("status", "ERROR");
 	    dataDao.updateContentChildStatus(objParam);
 	    
-	    if(userTempDir.exists()){
-	    	File[] contents = userTempDir.listFiles();
-	    	if (contents != null) {
-	            for (File f : contents) {
-	            	f.delete();
-	            }
-	        }
-			userTempDir.delete();
+	    if(isServerUrl && userTempDir.exists() && removeFileList != null){
+			for(String rFile: removeFileList){
+				File t1 = new File(rFile);
+				if(t1.exists()){
+					t1.delete();
+				}
+			}
 		}
 	}
 }

@@ -3,6 +3,7 @@ package kr.co.turbosoft.util;
 public class FFmpegSetting {
 	
 	private String ffmpeg_dir_and_file_name = "C:\\ffmpeg\\bin\\ffmpeg";
+	private String exiftool_file_name = "C:\\ffmpeg\\exiftool";
 	
 	public String getFfmpeg_dir_and_file_name() {
 		return ffmpeg_dir_and_file_name;
@@ -10,7 +11,6 @@ public class FFmpegSetting {
 	
 	public String getSrc_no_ext(String file_name) {
 		file_name = file_name.substring(0, file_name.lastIndexOf("."));
-		
 		return file_name;
 	}
 	
@@ -25,5 +25,15 @@ public class FFmpegSetting {
 		}
 		System.out.println("getSrc_dir file_dir :" +file_dir);
 		return file_dir;
+	}
+	
+	public String getExiftool_file_name() {
+		return exiftool_file_name;
+	}
+	
+	public String getSrc_exiftool_ext(String file_name) {
+		file_name = file_name.substring(0, file_name.lastIndexOf("."));
+		file_name = file_name.replaceAll("/","\\");
+		return file_name;
 	}
 }

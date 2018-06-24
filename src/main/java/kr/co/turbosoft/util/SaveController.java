@@ -46,12 +46,13 @@ public class SaveController extends Thread{
 	private String loginId;
 	private String logKey;
 	
-	private String serverUrlStr;
-	private String userIdStr;
-	private String userPassStr;
-	private String portNumStr;
-	private String saveFilePathStr;
+	private String b_serverUrl;
+	private String b_serverId;
+	private String b_serverPass;
+	private String b_serverPort;
+	private String b_serverPath;
 	private String fileType;
+	private boolean isServerUrl;
 	
 	
 	public void setDataAPI(DataDao dataDao){
@@ -59,18 +60,19 @@ public class SaveController extends Thread{
 	}
 	
 	public SaveController(String loginId, String logKey, List<Map<String,String>> fileList, List<String> saveFiles,
-			String serverUrlStr, String userIdStr, String userPassStr, String portNumStr, String saveFilePathStr, String fileType) {
+			String b_serverUrl, String b_serverId, String b_serverPass, String b_serverPort, String b_serverPath, String fileType, boolean isServerUrl) {
 		this.loginId = loginId;
 		this.logKey = logKey;
 		
         this.fileList = fileList;
         this.saveFiles = saveFiles;
-        this.serverUrlStr = serverUrlStr;
-        this.userIdStr = userIdStr;
-        this.userPassStr = userPassStr;
-        this.portNumStr = portNumStr;
-        this.saveFilePathStr = saveFilePathStr;
+        this.b_serverUrl = b_serverUrl;
+        this.b_serverId = b_serverId;
+        this.b_serverPass = b_serverPass;
+        this.b_serverPort = b_serverPort;
+        this.b_serverPath = b_serverPath;
         this.fileType = fileType;
+        this.isServerUrl = isServerUrl;
     }
 	
 	@Override
@@ -96,65 +98,69 @@ public class SaveController extends Thread{
 		}
 		objParam.put("fileIdxs", resIdx);
 		
-		try{
-			ftp = new FTPClient(); // FTP Client 객체 생성 
-			ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-			ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
-			
-			reply = ftp.getReplyCode();//
-			if(!FTPReply.isPositiveCompletion(reply)) {
-				ftp.disconnect();
-				objParam.put("status", "ERROR");
-				dataDao.updateImageStatus(objParam);
+		if(isServerUrl){
+			try{
+				ftp = new FTPClient(); // FTP Client 객체 생성 
+				ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+				ftp.setConnectTimeout(3000);
+				ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
 				
-				if(fileType != null && "imageFile".equals(fileType)){
-					param2.clear();
-					param2.put("loginId", loginId);
-					param2.put("idx", String.valueOf(logKey));
-					param2.put("status", "ERROR");
-					dataDao.updateLog(param2);
+				reply = ftp.getReplyCode();//
+				if(!FTPReply.isPositiveCompletion(reply)) {
+					ftp.disconnect();
+					objParam.put("status", "ERROR");
+					dataDao.updateImageStatus(objParam);
+					
+					if(fileType != null && "imageFile".equals(fileType)){
+						param2.clear();
+						param2.put("loginId", loginId);
+						param2.put("idx", String.valueOf(logKey));
+						param2.put("status", "ERROR");
+						dataDao.updateLog(param2);
+				    }
+					return;
 			    }
-				return;
-		    }
-			
-			if(!ftp.login(userIdStr, userPassStr)) {
-				ftp.logout();
-				objParam.put("status", "ERROR");
-				dataDao.updateImageStatus(objParam);
 				
-				if(fileType != null && "imageFile".equals(fileType)){
-					param2.clear();
-					param2.put("loginId", loginId);
-					param2.put("idx", String.valueOf(logKey));
-					param2.put("status", "ERROR");
-					dataDao.updateLog(param2);
+				if(!ftp.login(b_serverId, b_serverPass)) {
+					ftp.logout();
+					objParam.put("status", "ERROR");
+					dataDao.updateImageStatus(objParam);
+					
+					if(fileType != null && "imageFile".equals(fileType)){
+						param2.clear();
+						param2.put("loginId", loginId);
+						param2.put("idx", String.valueOf(logKey));
+						param2.put("status", "ERROR");
+						dataDao.updateLog(param2);
+				    }
+					return;
 			    }
-				return;
-		    }
-			
-			ftp.setFileType(FTP.BINARY_FILE_TYPE);
-		    ftp.enterLocalPassiveMode();
+				
+				ftp.setFileType(FTP.BINARY_FILE_TYPE);
+			    ftp.enterLocalPassiveMode();
 
-		    ftp.changeWorkingDirectory(saveFilePathStr +"/GeoPhoto"); // 작업 디렉토리 변경
-		    reply = ftp.getReplyCode();
-		    if (reply == 550) {
-		    	ftp.makeDirectory(saveFilePathStr +"/GeoPhoto");
-		    	ftp.changeWorkingDirectory(saveFilePathStr +"/GeoPhoto"); // 작업 디렉토리 변경
-		    }
-		}catch(Exception e){
-			e.printStackTrace();
-			objParam.put("status", "ERROR");
-			dataDao.updateImageStatus(objParam);
-			
-			if(fileType != null && "imageFile".equals(fileType)){
-				param2.clear();
-				param2.put("loginId", loginId);
-				param2.put("idx", String.valueOf(logKey));
-				param2.put("status", "ERROR");
-				dataDao.updateLog(param2);
-		    }
-			return;
+			    ftp.changeWorkingDirectory(b_serverPath +"/GeoPhoto"); // 작업 디렉토리 변경
+			    reply = ftp.getReplyCode();
+			    if (reply == 550) {
+			    	ftp.makeDirectory(b_serverPath +"/GeoPhoto");
+			    	ftp.changeWorkingDirectory(b_serverPath +"/GeoPhoto"); // 작업 디렉토리 변경
+			    }
+			}catch(Exception e){
+				e.printStackTrace();
+				objParam.put("status", "ERROR");
+				dataDao.updateImageStatus(objParam);
+				
+				if(fileType != null && "imageFile".equals(fileType)){
+					param2.clear();
+					param2.put("loginId", loginId);
+					param2.put("idx", String.valueOf(logKey));
+					param2.put("status", "ERROR");
+					dataDao.updateLog(param2);
+			    }
+				return;
+			}
 		}
+		
 		//--------------------------------------------------------------------------------------------
 	    
 		List<File> removeFile = new ArrayList<File>();
@@ -192,9 +198,13 @@ public class SaveController extends Thread{
 						filePathStr = fileMap.get("file");
 						tmpFtfFileName = filePathStr.substring(filePathStr.lastIndexOf("/")+1, filePathStr.length());
 						
-						removeFile.add(new File(savefullStr));
-						fis = new FileInputStream(savefullStr);
-						isSuccess = ftp.storeFile(tmpFtfFileName, fis);
+						if(isServerUrl){
+							removeFile.add(new File(savefullStr));
+							fis = new FileInputStream(savefullStr);
+							isSuccess = ftp.storeFile(tmpFtfFileName, fis);
+						}else{
+							isSuccess = true;
+						}
 						
 						if(isSuccess) {
 							paramMap = new HashMap<String, String>();
@@ -227,13 +237,14 @@ public class SaveController extends Thread{
 						        	g22.dispose();
 						        	ImageIO.write(newImage11, "jpg", thumb_file_name2);
 							        
-									removeFile.add(thumb_file_name1);
-									removeFile.add(thumb_file_name2);
-									
-									fis = new FileInputStream(thumb_file_name1);
-									isSuccess = ftp.storeFile(tmpPreThumb+"_thumbnail.png", fis);
-									fis = new FileInputStream(thumb_file_name2);
-									isSuccess = ftp.storeFile(tmpPreThumb+"_thumbnail_600.png", fis);
+						        	if(isServerUrl){
+						        		removeFile.add(thumb_file_name1);
+										removeFile.add(thumb_file_name2);
+										fis = new FileInputStream(thumb_file_name1);
+										isSuccess = ftp.storeFile(tmpPreThumb+"_thumbnail.png", fis);
+										fis = new FileInputStream(thumb_file_name2);
+										isSuccess = ftp.storeFile(tmpPreThumb+"_thumbnail_600.png", fis);
+						        	}
 									
 									//좌표파일
 									paramMap.put("idx", fileMap.get("idx"));
