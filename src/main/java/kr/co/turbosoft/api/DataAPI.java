@@ -69,6 +69,7 @@ import kr.co.turbosoft.util.VideoSaveController;
 
 @Controller
 public class DataAPI  {
+	
 	static Logger log = Logger.getLogger(DataAPI.class.getName());
 
 	static DataDao dataDao = null;
