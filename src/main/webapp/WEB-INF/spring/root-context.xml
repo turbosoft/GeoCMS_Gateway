@@ -64,6 +64,4 @@
 		<property name="password" value="${jdbc.password}" />
 	</bean>
 
-	<util:properties id="props" location="classpath:/properties/geocms.properties"/>     
-		
 </beans>
