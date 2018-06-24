@@ -4,12 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public interface DataDao {
-//	public void thisRollback();
-//	public void thisConnection();
-//	public void thisCommit();
-//	public void thisClose();
 
 	public List<Object> selectBase();
+	public int insertBase(HashMap<String, String> param);
 	public int updateBase(HashMap<String, String> param);
 	
 	public List<Object> selectTabList(HashMap<String, Object> param);
@@ -72,4 +69,9 @@ public interface DataDao {
 	
 	public int updateImageStatus(HashMap<String, Object> param);
 	public int updateContentChildStatus(HashMap<String, Object> param);
+	
+	public List<Object> selectServer(HashMap<String, Object> param);
+	public int insertServer(HashMap<String, String> param);
+	public int updateServer(HashMap<String, String> param);
+	public int deleteServer(HashMap<String, Object> param);
 }

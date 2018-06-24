@@ -23,6 +23,24 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 	}
 	
 	@Override
+	public int insertBase(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().insert("data.insertBase", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
+	public int updateBase(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().update("data.updateBase", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
 	public List<Object> selectTabList(HashMap<String, Object> param) {
 		// TODO Auto-generated method stub
 		resultList = getSqlSession().selectList("data.selectTabList", param);
@@ -51,15 +69,6 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 	@Override
 	public int deleteTab(HashMap<String, Object> param) {
 		resultIntegerValue = getSqlSession().delete("data.deleteTab", param);
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateBase(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateBase", param);
-		
 		return resultIntegerValue;
 	}
 	
@@ -430,6 +439,40 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 		// TODO Auto-generated method stub
 		
 		resultIntegerValue = getSqlSession().update("data.updateContentChildStatus", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
+	public List<Object> selectServer(HashMap<String, Object> param) {
+		// TODO Auto-generated method stub
+		resultList = getSqlSession().selectList("data.selectServer", param);
+		return resultList;
+	}
+	
+	@Override
+	public int insertServer(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().insert("data.insertServer", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
+	public int updateServer(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().update("data.updateServer", param);
+		
+		return resultIntegerValue;
+	}
+	
+	@Override
+	public int deleteServer(HashMap<String, Object> param) {
+		// TODO Auto-generated method stub
+		
+		resultIntegerValue = getSqlSession().delete("data.deleteServer", param);
 		
 		return resultIntegerValue;
 	}
