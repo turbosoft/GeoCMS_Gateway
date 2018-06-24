@@ -287,6 +287,7 @@ public class UserAPI {
 		} catch (Exception e) {
 			e.printStackTrace();
 			resultJSON.put("Code", 800);
+			System.out.println("--------------------------------------------------------------------------");
 			resultJSON.put("Message", Message.code800);
 		}
 		
@@ -640,11 +641,12 @@ public class UserAPI {
 						tempHash.put("shareIdx", shareIdx);
 						tempHash.put("shareKind", shareKind);
 					}
-				}else if(!"search".equals(type)){
-					resultJSON.put("Code", 600);
-					resultJSON.put("Message", Message.code600);
-					return callback + "(" + resultJSON.toString() + ")";
 				}
+//				else if(!"search".equals(type)){
+//					resultJSON.put("Code", 600);
+//					resultJSON.put("Message", Message.code600);
+//					return callback + "(" + resultJSON.toString() + ")";
+//				}
 				
 				if(userArr == null){
 					tempHash.put("searchOff", "Y");

@@ -3,6 +3,7 @@ package kr.co.turbosoft.api;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -89,20 +90,12 @@ public class DataAPI  {
 		this.userDao = userDao;
 	}
 	
-	@Value("#{props['file.serverUrl']}")
-	private String serverUrlStr;
-	
-	@Value("#{props['file.userId']}")
-	private String userIdStr;
-	
-	@Value("#{props['file.userPass']}")
-	private String userPassStr;
-	
-	@Value("#{props['file.portNum']}")
-	private String portNumStr;
-	
-	@Value("#{props['file.saveFilePath']}")
-	private String saveFilePathStr;
+	private String b_serverUrl = "";
+	private String b_serverPort = "";
+	private String b_serverId = "";
+	private String b_serverPass = "";
+	private String b_serverPath = "";
+	private boolean isServerUrl = false;
 
 	@RequestMapping(value = "/cms/getbase", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
 	@ResponseBody
@@ -133,7 +126,332 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateBase/{token}/{loginId}/{contentTab}/{contentTabType}/{contentNum}/{contentTabIdx}/{boardTab}/{boardNum}/{boardTabIdx}/{openAPI}/{latestView}/{mapZoom}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/insertBase/{token}/{loginId}/{contentTab}/{contentTabType}/{contentNum}/{contentTabIdx}/{boardTab}/{boardNum}/{boardTabIdx}/{openAPI}/{latestView}/{latitude}/{longitude}/{mapZoom}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String insertBaseService(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("contentTab") String contentTab
+			, @PathVariable("contentTabType") String contentTabType
+			, @PathVariable("contentNum") String contentNum
+			, @PathVariable("contentTabIdx") String contentTabIdx
+			, @PathVariable("boardTab") String boardTab
+			, @PathVariable("boardNum") String boardNum
+			, @PathVariable("boardTabIdx") String boardTabIdx
+			, @PathVariable("openAPI") String openAPI
+			, @PathVariable("latestView") String latestView
+			, @PathVariable("latitude") String latitude
+			, @PathVariable("longitude") String longitude
+			, @PathVariable("mapZoom") String mapZoom
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		
+		//token
+		param = new HashMap<String, String>();
+		resultList = new ArrayList<Object>();
+		param.put("token", token);
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
+		
+		try {
+			result = userDao.selectUid(param);
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(chkTokenToid){
+					if("ADMIN".equals(result.get("type"))){
+						if("&nbsp".equals(mapZoom) || "undefined".equals(mapZoom)){
+							mapZoom = "8";
+						}
+						
+						boolean resChkBase = checkUpdateBase(contentTab, contentTabType, contentNum, contentTabIdx, boardTab, boardNum, boardTabIdx, openAPI, latestView, mapZoom);
+						
+						if(resChkBase){
+							param.clear();
+							param.put("openAPI", openAPI);
+							param.put("latestView", latestView);
+							param.put("mapZoom", mapZoom);
+							param.put("latitude", latitude);
+							param.put("longitude", longitude);
+							resultIntegerValue = dataDao.insertBase(param);
+							
+							List<Object> removeList = new ArrayList<Object>();
+							List<Map<String,Object>> newIdxArr = new ArrayList<Map<String,Object>>();
+							List<Object> newProjectObjList = new ArrayList<Object>();
+							List<Object> tmpNewProjectArr = new ArrayList<Object>();
+							List<Map<String,Object>> tmpNewProjectArr2 = new ArrayList<Map<String,Object>>();
+							List<Object> resList = new ArrayList<Object>();
+							HashMap<String, Object> objParam2 = new HashMap<String, Object>();
+							
+							String[] cTabIdxArr = contentTabIdx.split(",");
+							String[] bTabIdxArr = boardTabIdx.split(",");
+							List<String> saveIdxArr = new ArrayList<String>();
+							
+							DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+							def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+							DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+							TransactionStatus sts = txManager.getTransaction(def);
+
+							try{
+								boolean addIdx = false;
+								if(cTabIdxArr != null && cTabIdxArr.length > 0){
+									objParam = new HashMap<String, Object>();
+									objParam.put("tabGroup", "content");
+									resList = dataDao.selectTabList(objParam);
+									
+									for(int i=0;i<cTabIdxArr.length;i++){
+										addIdx = false;
+										tmpNewProjectArr = new ArrayList<Object>();
+										for(int j=0;j<resList.size();j++){
+											Map<String,Object> tmpMap = (Map<String,Object>)resList.get(j);
+											String tmIdxStr = String.valueOf(tmpMap.get("tabidx"));
+											if(tmpMap != null && cTabIdxArr[i].equals(tmIdxStr)){
+												newIdxArr.add(tmpMap);
+												addIdx = true;
+												param = new HashMap<String, String>();
+												param.put("tabIdx", tmIdxStr);
+												tmpNewProjectArr = dataDao.selectAllProjectList(param);
+												newProjectObjList.add(tmpNewProjectArr);
+											}
+										}
+										if(!addIdx){
+											newIdxArr.add(null);
+											newProjectObjList.add(null);
+										}
+										if(cTabIdxArr[i] != null && !"&nbsp".equals(cTabIdxArr[i])){
+											saveIdxArr.add(cTabIdxArr[i]);
+										}
+									}
+									
+									objParam = new HashMap<String, Object>();
+									objParam.put("tabGroup", "content");
+									objParam.put("saveIdxArr", saveIdxArr);
+									if(saveIdxArr != null && saveIdxArr.size() > 0){
+										removeList = dataDao.selectTabList(objParam);
+										if(removeList != null && removeList.size() > 0){
+											objParam = new HashMap<String, Object>();
+											objParam.put("nowRightTabName", "content");
+											objParam.put("removeList", removeList);
+											resultIntegerValue = dataDao.deleteTab(objParam);
+											if(resultIntegerValue > 0){
+												for(int i=0;i<removeList.size();i++){
+													Map<String,Object> tmpMap = (Map<String,Object>)removeList.get(i);
+													if(tmpMap != null){
+														param = new HashMap<String, String>();
+														param.put("newTabIdx", "0");
+														param.put("oldTabIdx", String.valueOf(tmpMap.get("tabidx")));
+														resultIntegerValue += dataDao.updateTabIdxProject(param);
+													}
+												}
+											}
+										}
+									}
+									
+									String[] tmpContentArr = contentTab.split(",");
+									String[] tmpContentTypeArr = contentTabType.split(",");
+									String[] tmpContentNumArr = contentNum.split(",");
+									String tmpTabNameA = "";
+									
+									if(tmpContentArr != null && tmpContentArr.length > 0 && newIdxArr != null && newIdxArr.size() > 0){
+										for(int i=0;i<tmpContentArr.length;i++){
+											Map<String,Object> tmpMap = (Map<String,Object>)newIdxArr.get(i);
+											tmpNewProjectArr2 = new ArrayList<Map<String,Object>>();
+											if(tmpMap != null && !"&nbsp".equals(tmpContentArr[i])){
+												param = new HashMap<String, String>();
+												tmpTabNameA = tmpContentArr[i];
+												if(tmpTabNameA != null){
+													tmpTabNameA = dataReplaceFun(tmpTabNameA);
+												}
+												param.put("tabIdx", String.valueOf(i+1));
+												param.put("tabName", tmpTabNameA);
+												param.put("tabHeight", tmpContentNumArr[i]);
+												param.put("tabType", tmpContentTypeArr[i]);
+												param.put("tabGroup", "content");
+												param.put("userId", loginId);
+												param.put("idx", String.valueOf(tmpMap.get("idx")));
+												resultIntegerValue = dataDao.updateTab(param);
+												if(resultIntegerValue > 0){
+													objParam2 = new HashMap<String, Object>();
+													tmpNewProjectArr2 = (List<Map<String,Object>>)newProjectObjList.get(i);
+													if(tmpNewProjectArr2 != null && tmpNewProjectArr2.size() > 0){
+														objParam2.put("newTabIdx", String.valueOf(i+1));
+														objParam2.put("oldTabProject", tmpNewProjectArr2);
+														resultIntegerValue += dataDao.updateTabProjectIdx(objParam2);
+													}
+												}
+											}else if(!"&nbsp".equals(tmpContentArr[i])){
+												tmpTabNameA = tmpContentArr[i];
+												if(tmpTabNameA != null){
+													tmpTabNameA = dataReplaceFun(tmpTabNameA);
+												}
+												param = new HashMap<String, String>();
+												param.put("tabIdx", String.valueOf(i+1));
+												param.put("tabName", tmpTabNameA);
+												param.put("tabHeight", tmpContentNumArr[i]);
+												param.put("tabType", tmpContentTypeArr[i]);
+												param.put("tabGroup", "content");
+												param.put("userId", loginId);
+												resultIntegerValue += dataDao.insertTab(param);
+											}
+										}
+									}
+								}
+							
+								//board
+								if(bTabIdxArr != null && bTabIdxArr.length>0){
+									newIdxArr = new ArrayList<Map<String,Object>>();
+									saveIdxArr = new ArrayList<String>();
+									removeList = new ArrayList<Object>();
+									newProjectObjList = new ArrayList<Object>();
+									tmpNewProjectArr = new ArrayList<Object>();
+									tmpNewProjectArr2 = new ArrayList<Map<String,Object>>();
+									objParam2 = new HashMap<String, Object>();
+									objParam = new HashMap<String, Object>();
+									
+									objParam.put("tabGroup", "board");
+									resList = dataDao.selectTabList(objParam);
+									
+									for(int i=0;i<bTabIdxArr.length;i++){
+										addIdx = false;
+										tmpNewProjectArr = new ArrayList<Object>();
+										for(int j=0;j<resList.size();j++){
+											Map<String,Object> tmpMap = (Map<String,Object>)resList.get(j);
+											String tmIdxStr = String.valueOf(tmpMap.get("tabidx"));
+											if(tmpMap != null && bTabIdxArr[i].equals(tmIdxStr)){
+												newIdxArr.add(tmpMap);
+												addIdx = true;
+												param = new HashMap<String, String>();
+												param.put("tabIdx", tmIdxStr);
+												param.put("type", "list");
+												param.put("loginId", loginId);
+												tmpNewProjectArr = dataDao.selectBoardList(param);
+												newProjectObjList.add(tmpNewProjectArr);
+											}
+										}
+										if(!addIdx){
+											newIdxArr.add(null);
+											newProjectObjList.add(null);
+										}
+										if(bTabIdxArr[i] != null && !"&nbsp".equals(bTabIdxArr[i])){
+											saveIdxArr.add(bTabIdxArr[i]);
+										}
+									}
+									
+									objParam = new HashMap<String, Object>();
+									objParam.put("tabGroup", "board");
+									objParam.put("saveIdxArr", saveIdxArr);
+									if(saveIdxArr != null && saveIdxArr.size() > 0){
+										removeList = dataDao.selectTabList(objParam);
+										if(removeList != null && removeList.size() > 0){
+											objParam = new HashMap<String, Object>();
+											objParam.put("nowRightTabName", "board");
+											objParam.put("removeList", removeList);
+											resultIntegerValue = dataDao.deleteTab(objParam);
+											if(resultIntegerValue >= 1){
+												for(int i=0;i<removeList.size();i++){
+													Map<String,Object> tmpMap = (Map<String,Object>)removeList.get(i);
+													if(tmpMap != null){
+														param = new HashMap<String, String>();
+														param.put("newTabIdx", "0");
+														param.put("oldTabIdx", String.valueOf(tmpMap.get("tabidx")));
+														resultIntegerValue += dataDao.updateTabIdxBoard(param);
+													}
+												}
+											}
+										}
+									}
+									
+									String[] tmpBoardArr = boardTab.split(",");
+									String[] tmpBoardNumArr = boardNum.split(",");
+									String tmpTabNameA = "";
+									
+									if(tmpBoardArr != null && tmpBoardArr.length > 0){
+										for(int i=0;i<tmpBoardArr.length;i++){
+											Map<String,Object> tmpMap = (Map<String,Object>)newIdxArr.get(i);
+											tmpNewProjectArr2 = new ArrayList<Map<String,Object>>();
+											if(tmpMap != null && !"&nbsp".equals(tmpBoardArr[i])){
+												param = new HashMap<String, String>();
+												tmpTabNameA = tmpBoardArr[i];
+												if(tmpTabNameA != null){
+													tmpTabNameA = dataReplaceFun(tmpTabNameA);
+												}
+												param.put("tabIdx", String.valueOf(i+1));
+												param.put("tabName", tmpTabNameA);
+												param.put("tabHeight", tmpBoardNumArr[i]);
+												param.put("tabType", null);
+												param.put("tabGroup", "board");
+												param.put("userId", loginId);
+												param.put("idx", String.valueOf(tmpMap.get("idx")));
+												resultIntegerValue = dataDao.updateTab(param);
+												if(resultIntegerValue > 0){
+													objParam2 = new HashMap<String, Object>();
+													tmpNewProjectArr2 = (List<Map<String,Object>>)newProjectObjList.get(i);
+													if(tmpNewProjectArr2 != null && tmpNewProjectArr2.size() > 0){
+														objParam2.put("newTabIdx", String.valueOf(i+1));
+														objParam2.put("oldTabBoard", tmpNewProjectArr2);
+														resultIntegerValue += dataDao.updateTabBoardIdx(objParam2);
+													}
+												}
+											}else if(!"&nbsp".equals(tmpBoardArr[i])){
+												param = new HashMap<String, String>();
+												tmpTabNameA = tmpBoardArr[i];
+												if(tmpTabNameA != null){
+													tmpTabNameA = dataReplaceFun(tmpTabNameA);
+												}
+												param.put("tabIdx", String.valueOf(i+1));
+												param.put("tabName", tmpTabNameA);
+												param.put("tabHeight", tmpBoardNumArr[i]);
+												param.put("tabType", null);
+												param.put("tabGroup", "board");
+												param.put("userId", loginId);
+												resultIntegerValue += dataDao.insertTab(param);
+											}
+										}
+									}
+								}
+							
+							}catch(Exception e){
+								txManager.rollback(sts);
+								e.printStackTrace();
+								resultJSON.put("Code", 800);
+								resultJSON.put("Message", Message.code800);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+							
+							txManager.commit(sts);
+							
+							if(resultIntegerValue >= 1) {
+								resultJSON.put("Code", 100);
+								resultJSON.put("Message", Message.code100);
+							}else {
+								resultJSON.put("Code", 300);
+								resultJSON.put("Message", Message.code300);
+							}
+						}else{
+							resultJSON.put("Code", 600);
+							resultJSON.put("Message", Message.code600);
+						}
+						
+					}else{
+						resultJSON.put("Code", 500);
+						resultJSON.put("Message", Message.code500);
+					}
+				}else{
+					resultJSON.put("Code", 205);
+					resultJSON.put("Message", Message.code205);
+				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/updateBase/{token}/{loginId}/{contentTab}/{contentTabType}/{contentNum}/{contentTabIdx}/{boardTab}/{boardNum}/{boardTabIdx}/{openAPI}/{latestView}/{latitude}/{longitude}/{mapZoom}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateBaseService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -147,6 +465,8 @@ public class DataAPI  {
 			, @PathVariable("boardTabIdx") String boardTabIdx
 			, @PathVariable("openAPI") String openAPI
 			, @PathVariable("latestView") String latestView
+			, @PathVariable("latitude") String latitude
+			, @PathVariable("longitude") String longitude
 			, @PathVariable("mapZoom") String mapZoom
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
@@ -170,6 +490,8 @@ public class DataAPI  {
 							param.put("openAPI", openAPI);
 							param.put("latestView", latestView);
 							param.put("mapZoom", mapZoom);
+							param.put("latitude", latitude);
+							param.put("longitude", longitude);
 							
 							resultIntegerValue = dataDao.updateBase(param);
 							
@@ -498,7 +820,6 @@ public class DataAPI  {
 					tabIdx = tabIdx.replace("&nbsp", "");
 					
 					param.put("type", type);
-//					param.put("tabName", tabName);
 					param.put("tabIdx", tabIdx);
 					param.put("loginId", loginId);
 					
@@ -579,7 +900,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/saveBoardAll/{token}/{loginId}/{title}/{content}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/saveBoardAll/{token}/{loginId}/{title}/{content}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}/{tabIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveBoardAllService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -591,10 +912,13 @@ public class DataAPI  {
 			, @PathVariable("removeShare") String removeShare
 			, @PathVariable("editYes") String editYes
 			, @PathVariable("editNo") String editNo
+			, @PathVariable("tabIdx") String tabIdx
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
 		result = new HashMap<String, String>();
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
+		isServerUrl = false;
 		
 		//token
 		param.clear();
@@ -611,8 +935,6 @@ public class DataAPI  {
 					return callback + "(" + resultJSON.toString() + ")";
 				}
 				
-//				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-//				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
 				title = dataReplaceFun(title);
 				content = dataReplaceFun(content);
 				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
@@ -631,6 +953,9 @@ public class DataAPI  {
 				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare) && !checkListIsNumber(removeShare)){chkData = false;}
 				if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && !checkListIsNumber(editYes)){chkData = false;}
 				if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && !checkListIsNumber(editNo)){chkData = false;}
+				if(tabIdx == null || tabIdx == "" || !StringUtils.isNumeric(tabIdx)){
+					chkData = false;
+				}
 				
 				if(!chkData){
 					resultJSON.put("Code", 600);
@@ -648,9 +973,8 @@ public class DataAPI  {
 				//파일 정보 저장 변수
 				ArrayList<String> fileNames = new ArrayList<String>();
 				String filesStr = "";
-				String saveUserPath = request.getSession().getServletContext().getRealPath("/")+ "upload";
-				File saveUserPathDir = new File(saveUserPath);
-			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+				String saveUserPath = "";
+				File saveUserPathDir = null;
 				
 				//파일 업로드
 				boolean isMultipart = ServletFileUpload.isMultipartContent(request); // 멀티파트인지 체크
@@ -660,43 +984,78 @@ public class DataAPI  {
 				FTPClient ftp = null; // FTP Client 객체 
 				FileInputStream fis = null; // File Input Stream 
 				int reply = 0;
-				
+
 				try {
 					if(isMultipart) {
-						ftp = new FTPClient(); // FTP Client 객체 생성 
-						ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-						ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
 						
-						reply = ftp.getReplyCode();
-						if(!FTPReply.isPositiveCompletion(reply)) {
-							ftp.disconnect();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
+						objParam = new HashMap<String, Object>();
+						objParam.put("selectYN", "Y");
 						
-						if(!ftp.login(userIdStr, userPassStr)) {
-							ftp.logout();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
+						//get server
+						resultList = dataDao.selectServer(objParam);
 						
-						ftp.setFileType(FTP.BINARY_FILE_TYPE);
-					    ftp.enterLocalPassiveMode();
+						if(resultList != null && resultList.size() > 0){
+							Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+							if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+									serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+								isServerUrl = true;
+								b_serverUrl = serverParam.get("serverurl");
+								b_serverPort = String.valueOf(serverParam.get("serverport"));
+								b_serverId = serverParam.get("serverid");
+								b_serverPass = serverParam.get("serverpass");
+								b_serverPath = serverParam.get("serverpath");
+							}else{
+								b_serverPath = serverParam.get("serverpath");
+							}
+						}else{
+							b_serverPath = "upload";
+						}
+						saveUserPath = request.getSession().getServletContext().getRealPath("/");
+						saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+										saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+										File.separator + b_serverPath;
+						
+						saveUserPathDir = new File(saveUserPath);
+					    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+						
+						if(isServerUrl){
+							ftp = new FTPClient(); // FTP Client 객체 생성 
+							ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+							ftp.setConnectTimeout(3000);
+							ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+							
+							reply = ftp.getReplyCode();
+							if(!FTPReply.isPositiveCompletion(reply)) {
+								ftp.disconnect();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							if(!ftp.login(b_serverId, b_serverPass)) {
+								ftp.logout();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							ftp.setFileType(FTP.BINARY_FILE_TYPE);
+						    ftp.enterLocalPassiveMode();
 
-					    ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType); // 작업 디렉토리 변경
-					    reply = ftp.getReplyCode();
-					    if (reply == 550) {
-					    	ftp.makeDirectory(saveFilePathStr +"/" +uploadType);
-					    	ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType ); // 작업 디렉토리 변경
-					    }
+						    ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType); // 작업 디렉토리 변경
+						    reply = ftp.getReplyCode();
+						    if (reply == 550) {
+						    	ftp.makeDirectory(b_serverPath +"/" +uploadType);
+						    	ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType ); // 작업 디렉토리 변경
+						    }
+						}
+						
 					    
 						//--------------------------------------------------------------------------------------------
 					    int uploadMaxSize = 2*1024*1024*1024; //1024MB = 1GB
 						File tempDir = new File(saveUserPath+"/"+"tmp");
 						File uploadDir = new File(saveUserPath+"/"+ uploadType);
-//						
+				
 						if(!tempDir.exists()) tempDir.mkdir();
 						if(!uploadDir.exists()) uploadDir.mkdir();
 //						
@@ -733,14 +1092,23 @@ public class DataAPI  {
 								}
 								
 								String changeFileName = uploadFilePath.substring(uploadFilePath.lastIndexOf("/")+1);
-								String changFilePath = saveFilePathStr+"/"+uploadType+"/"+changeFileName;
-								prefix = saveFilePathStr+"/"+uploadType+"/"+ fileName.substring(0, fileName.lastIndexOf("."));
+								String changFilePath = b_serverPath+"/"+uploadType+"/"+changeFileName;
+								prefix = b_serverPath+"/"+uploadType+"/"+ fileName.substring(0, fileName.lastIndexOf("."));
 								
-								FTPFile[] fileN = ftp.listFiles("/"+changFilePath);
-								while(fileN.length > 0) {
-									changFilePath = prefix+"("+fileIndex+")"+suffix;
-									fileIndex++;
-									fileN = ftp.listFiles("/"+changFilePath);
+								if(isServerUrl){
+									FTPFile[] fileN = ftp.listFiles("/"+changFilePath);
+									while(fileN.length > 0) {
+										changFilePath = prefix+"("+fileIndex+")"+suffix;
+										fileIndex++;
+										fileN = ftp.listFiles("/"+changFilePath);
+									}
+								}else{
+									File fileN = new File(uploadDir + File.separator + changFilePath);
+									while(fileN.exists()) {
+										changFilePath = prefix+"("+fileIndex+")"+suffix;
+										fileIndex++;
+										fileN = new File(uploadDir + File.separator + changFilePath);
+									}
 								}
 								
 								changeFileName = changFilePath.substring(changFilePath.lastIndexOf("/")+1);
@@ -749,38 +1117,40 @@ public class DataAPI  {
 								item.write(new File(uploadFilePath));
 								item.delete();
 								//////////////////////////////////////////
-						        try {
-						           fis = new FileInputStream(uploadFilePath);
-						           boolean isSuccess = ftp.storeFile(changeFileName, fis);
-						        
-						           if(isSuccess) {
-						              System.out.println(changFilePath + "파일 FTP 업로드 성공");
-						           }
-						        } catch(IOException ie) {
-						           ie.printStackTrace();
-						           resultJSON.put("Code", 400);
-						           resultJSON.put("Message", Message.code400);
-						           return callback + "(" + resultJSON.toString() + ")";
-						        } finally {
-						           File tmpF = new File(uploadFilePath);
-						           if(fis != null) {
-						              try {
-						                 fis.close();
-						              } catch(IOException ie) {
-						                 ie.printStackTrace();
-						                 resultJSON.put("Code", 400);
-								         resultJSON.put("Message", Message.code400);
-								         return callback + "(" + resultJSON.toString() + ")";
-						              }finally{
-						            	  if(tmpF.exists()){
+								if(isServerUrl){
+									try {
+								           fis = new FileInputStream(uploadFilePath);
+								           boolean isSuccess = ftp.storeFile(changeFileName, fis);
+								        
+								           if(isSuccess) {
+								              System.out.println(changFilePath + "파일 FTP 업로드 성공");
+								           }
+								        } catch(IOException ie) {
+								           ie.printStackTrace();
+								           resultJSON.put("Code", 400);
+								           resultJSON.put("Message", Message.code400);
+								           return callback + "(" + resultJSON.toString() + ")";
+								        } finally {
+								           File tmpF = new File(uploadFilePath);
+								           if(fis != null) {
+								              try {
+								                 fis.close();
+								              } catch(IOException ie) {
+								                 ie.printStackTrace();
+								                 resultJSON.put("Code", 400);
+										         resultJSON.put("Message", Message.code400);
+										         return callback + "(" + resultJSON.toString() + ")";
+								              }finally{
+								            	  if(tmpF.exists()){
+										        	   tmpF.delete();
+										          }
+								              }
+								           }
+								           if(tmpF.exists()){
 								        	   tmpF.delete();
-								          }
-						              }
-						           }
-						           if(tmpF.exists()){
-						        	   tmpF.delete();
-						           }
-						        }
+								           }
+								        }
+								}
 								/////////////////////////////////////////
 								
 								//파일명 추가
@@ -830,48 +1200,63 @@ public class DataAPI  {
 					content = makeContentStr;
 				}
 				
-				param.clear();
-				param.put("loginId", loginId);
-				param.put("title", title);
-				param.put("content", content);
-				param.put("files", filesStr);
-				param.put("shareType", shareType);
-				resultIntegerValue = dataDao.insertBoard(param);
-				
-				int saveIndex = 0;
-				if(resultIntegerValue == 1) {
-					if(param != null){
-						if(param.get("idx") != null && param.get("idx") != ""){
-							saveIndex = Integer.valueOf(String.valueOf(param.get("idx")));
-						}
-						
-						if(shareType != null && "2".equals(shareType) && addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
-							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                TransactionStatus sts = txManager.getTransaction(def);
+                
+				try{
+	                param.clear();
+					param.put("loginId", loginId);
+					param.put("title", title);
+					param.put("content", content);
+					param.put("files", filesStr);
+					param.put("shareType", shareType);
+					param.put("tabIdx", tabIdx);
+					resultIntegerValue = dataDao.insertBoard(param);
+					
+					int saveIndex = 0;
+					if(resultIntegerValue == 1) {
+						if(param != null){
+							if(param.get("idx") != null && param.get("idx") != ""){
+								saveIndex = Integer.valueOf(String.valueOf(param.get("idx")));
+							}
 							
-							String[] shareTList = addShare.split(",");
-							tmpParam.put("shareTList", shareTList);
-							tmpParam.put("shareIdx", param.get("idx"));
-							tmpParam.put("shareKind", "GeoCMS");
-							resultIntegerValue = userDao.insertShare(tmpParam);
-							
-							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-								String[] editList = editYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+							if(shareType != null && "2".equals(shareType) && addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
+								HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+								
+								String[] shareTList = addShare.split(",");
+								tmpParam.put("shareTList", shareTList);
+								tmpParam.put("shareIdx", param.get("idx"));
+								tmpParam.put("shareKind", "GeoCMS");
+								resultIntegerValue = userDao.insertShare(tmpParam);
+								
+								if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+									String[] editList = editYes.split(",");
+									tmpParam.put("editType", "Y");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}
 							}
 						}
 					}
+					
+					txManager.commit(sts);
+					if(resultIntegerValue > 0) {
+						resultJSON.put("Code", 100);
+						resultJSON.put("Message", Message.code100);
+						resultJSON.put("Data", saveIndex);
+					}else{
+						resultJSON.put("Code", 300);
+						resultJSON.put("Message", Message.code300);
+					}
+				}catch(Exception e){
+					e.printStackTrace();
+					txManager.rollback(sts);
+					resultJSON.put("Code", 800);
+					resultJSON.put("Message", Message.code800);
 				}
 				
-				if(resultIntegerValue > 0) {
-					resultJSON.put("Code", 100);
-					resultJSON.put("Message", Message.code100);
-					resultJSON.put("Data", saveIndex);
-				}else{
-					resultJSON.put("Code", 300);
-					resultJSON.put("Message", Message.code300);
-				}
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
@@ -885,7 +1270,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateBorderAll/{token}/{loginId}/{title}/{content}/{idx}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateBorderAll/{token}/{loginId}/{title}/{content}/{idx}/{shareType}/{addShare}/{removeShare}/{editYes}/{editNo}/{tabIdx}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateBorderService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -898,10 +1283,12 @@ public class DataAPI  {
 			, @PathVariable("removeShare") String removeShare
 			, @PathVariable("editYes") String editYes
 			, @PathVariable("editNo") String editNo
+			, @PathVariable("tabIdx") String tabIdx
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
-		
 		param = new HashMap<String, String>();
+		isServerUrl = false;
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		
 		//token
 		param.put("token", token);
@@ -918,8 +1305,6 @@ public class DataAPI  {
 					
 				}
 				
-//				if(title != null && !"".equals(title) && !"null".equals(title)){ title = title.replaceAll("&sbsp","/"); }
-//				if(content != null && !"".equals(content) && !"null".equals(content)){ content = content.replaceAll("&sbsp","/"); }
 				title = dataReplaceFun(title);
 				content = dataReplaceFun(content);
 				if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){ addShare = addShare.replaceAll("&nbsp",""); }
@@ -938,6 +1323,9 @@ public class DataAPI  {
 				if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare) && !checkListIsNumber(removeShare)){chkData = false;}
 				if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && !checkListIsNumber(editYes)){chkData = false;}
 				if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && !checkListIsNumber(editNo)){chkData = false;}
+				if(tabIdx == null || tabIdx == "" || !StringUtils.isNumeric(tabIdx)){
+					chkData = false;
+				}
 				
 				if(!chkData){
 					resultJSON.put("Code", 600);
@@ -954,10 +1342,9 @@ public class DataAPI  {
 				
 				//파일 정보 저장 변수
 				ArrayList<String> fileNames = new ArrayList<String>();
+				String saveUserPath = "";
+				File saveUserPathDir = null;
 				String filesStr = "";
-				String saveUserPath = request.getSession().getServletContext().getRealPath("/")+ "upload";
-				File saveUserPathDir = new File(saveUserPath);
-			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
 				
 				//파일 업로드
 				boolean isMultipart = ServletFileUpload.isMultipartContent(request); // 멀티파트인지 체크
@@ -969,34 +1356,67 @@ public class DataAPI  {
 				int reply = 0;
 
 				try {
-					ftp = new FTPClient(); // FTP Client 객체 생성 
-					ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-					ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+					objParam = new HashMap<String, Object>();
+					objParam.put("selectYN", "Y");
 					
-					reply = ftp.getReplyCode();
-					if(!FTPReply.isPositiveCompletion(reply)) {
-						ftp.disconnect();
-						resultJSON.put("Code", 400);
-						resultJSON.put("Message", Message.code400);
-						return callback + "(" + resultJSON.toString() + ")";
+					//get server
+					resultList = dataDao.selectServer(objParam);
+					
+					if(resultList != null && resultList.size() > 0){
+						Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+						if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+								serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+							isServerUrl = true;
+							b_serverUrl = serverParam.get("serverurl");
+							b_serverPort = String.valueOf(serverParam.get("serverport"));
+							b_serverId = serverParam.get("serverid");
+							b_serverPass = serverParam.get("serverpass");
+							b_serverPath = serverParam.get("serverpath");
+						}else{
+							b_serverPath = serverParam.get("serverpath");
+						}
+					}else{
+						b_serverPath = "upload";
 					}
+					saveUserPath = request.getSession().getServletContext().getRealPath("/");
+					saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+							saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+							File.separator + b_serverPath;
 					
-					if(!ftp.login(userIdStr, userPassStr)) {
-						ftp.logout();
-						resultJSON.put("Code", 400);
-						resultJSON.put("Message", Message.code400);
-						return callback + "(" + resultJSON.toString() + ")";
-					}
-					
-					ftp.setFileType(FTP.BINARY_FILE_TYPE);
-					ftp.enterLocalPassiveMode();
-					
-					ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType); // 작업 디렉토리 변경
-					reply = ftp.getReplyCode();
-					if (reply == 550) {
-						ftp.makeDirectory(saveFilePathStr +"/" +uploadType);
-						ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType ); // 작업 디렉토리 변경
-					}
+					saveUserPathDir = new File(saveUserPath);
+				    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+				    
+				    if(isServerUrl){
+				    	ftp = new FTPClient(); // FTP Client 객체 생성 
+						ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+						ftp.setConnectTimeout(3000);
+						ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+						
+						reply = ftp.getReplyCode();
+						if(!FTPReply.isPositiveCompletion(reply)) {
+							ftp.disconnect();
+							resultJSON.put("Code", 400);
+							resultJSON.put("Message", Message.code400);
+							return callback + "(" + resultJSON.toString() + ")";
+						}
+						
+						if(!ftp.login(b_serverId, b_serverPass)) {
+							ftp.logout();
+							resultJSON.put("Code", 400);
+							resultJSON.put("Message", Message.code400);
+							return callback + "(" + resultJSON.toString() + ")";
+						}
+						
+						ftp.setFileType(FTP.BINARY_FILE_TYPE);
+						ftp.enterLocalPassiveMode();
+						
+						ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType); // 작업 디렉토리 변경
+						reply = ftp.getReplyCode();
+						if (reply == 550) {
+							ftp.makeDirectory(b_serverPath +"/" +uploadType);
+							ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType ); // 작업 디렉토리 변경
+						}
+				    }
 					
 					//--------------------------------------------------------------------------------------------
 					
@@ -1009,7 +1429,6 @@ public class DataAPI  {
 						String[] tmpContent = content.split("<img src=\"");
 						for(int m= 0; m<tmpContent.length; m++){
 							tmpoldFileName = "";
-//							if(tmpContent[m] != null && tmpContent[m].contains("turbosoft1")){
 							if(tmpContent[m] != null && tmpContent[m].contains("GeoCMS/")){
 								String tmpText1 = tmpContent[m].substring(0, tmpContent[m].lastIndexOf("GeoCMS/"));
 								tmpoldFileName = tmpContent[m].replace(tmpText1+"GeoCMS/", "");
@@ -1045,11 +1464,21 @@ public class DataAPI  {
 									}
 									if(!chkOld){
 										try {
-											boolean isSuccess = ftp.deleteFile(tmpFileName2[k]);//파일삭제
-											
+											boolean isSuccess = false;
+											if(isServerUrl){
+												isSuccess = ftp.deleteFile(tmpFileName2[k]);//파일삭제
+												
+											}else{
+												File tmpSFile = new File(saveUserPath + tmpFileName2[k]);
+												if(tmpSFile.exists()){
+													tmpSFile.delete();
+													isSuccess = true;
+												}
+											}
 											if(isSuccess) {
 												System.out.println(tmpFileName2[k] + "파일 FTP 삭제 성공");
 											}
+											
 										} catch(IOException ie) {
 											ie.printStackTrace();
 											resultJSON.put("Code", 400);
@@ -1112,14 +1541,23 @@ public class DataAPI  {
 								}
 								
 								String changeFileName = uploadFilePath.substring(uploadFilePath.lastIndexOf("/")+1);
-								String changFilePath = saveFilePathStr+"/"+uploadType+"/"+changeFileName;
-								prefix = saveFilePathStr+"/"+uploadType+"/"+ fileName.substring(0, fileName.lastIndexOf("."));
+								String changFilePath = b_serverPath+"/"+uploadType+"/"+changeFileName;
+								prefix = b_serverPath+"/"+uploadType+"/"+ fileName.substring(0, fileName.lastIndexOf("."));
 								
-								FTPFile[] fileN = ftp.listFiles("/"+changFilePath);
-								while(fileN.length > 0) {
-									changFilePath = prefix+"("+fileIndex+")"+suffix;
-									fileIndex++;
-									fileN = ftp.listFiles("/"+changFilePath);
+								if(isServerUrl){
+									FTPFile[] fileN = ftp.listFiles("/"+changFilePath);
+									while(fileN.length > 0) {
+										changFilePath = prefix+"("+fileIndex+")"+suffix;
+										fileIndex++;
+										fileN = ftp.listFiles("/"+changFilePath);
+									}
+								}else{
+									File fileN = new File(uploadDir + File.separator + changFilePath);
+									while(fileN.exists()) {
+										changFilePath = prefix+"("+fileIndex+")"+suffix;
+										fileIndex++;
+										fileN = new File(uploadDir + File.separator + changFilePath);
+									}
 								}
 								
 								changeFileName = changFilePath.substring(changFilePath.lastIndexOf("/")+1);
@@ -1128,36 +1566,38 @@ public class DataAPI  {
 								item.write(new File(uploadFilePath));
 								item.delete();
 								//////////////////////////////////////////
-								try {
-									fis = new FileInputStream(uploadFilePath);
-									boolean isSuccess = ftp.storeFile(changeFileName, fis);
-									
-									if(isSuccess) {
-										System.out.println(changFilePath + "파일 FTP 업로드 성공");
-									}
-								} catch(IOException ie) {
-									ie.printStackTrace();
-									resultJSON.put("Code", 400);
-									resultJSON.put("Message", Message.code400);
-									return callback + "(" + resultJSON.toString() + ")";
-								} finally {
-									File tmpF = new File(uploadFilePath);
-									if(fis != null) {
-										try {
-											fis.close();
-										} catch(IOException ie) {
-											ie.printStackTrace();
-											resultJSON.put("Code", 400);
-											resultJSON.put("Message", Message.code400);
-											return callback + "(" + resultJSON.toString() + ")";
-										}finally{
-											if(tmpF.exists()){
-												tmpF.delete();
+								if(isServerUrl){
+									try {
+										fis = new FileInputStream(uploadFilePath);
+										boolean isSuccess = ftp.storeFile(changeFileName, fis);
+										
+										if(isSuccess) {
+											System.out.println(changFilePath + "파일 FTP 업로드 성공");
+										}
+									} catch(IOException ie) {
+										ie.printStackTrace();
+										resultJSON.put("Code", 400);
+										resultJSON.put("Message", Message.code400);
+										return callback + "(" + resultJSON.toString() + ")";
+									} finally {
+										File tmpF = new File(uploadFilePath);
+										if(fis != null) {
+											try {
+												fis.close();
+											} catch(IOException ie) {
+												ie.printStackTrace();
+												resultJSON.put("Code", 400);
+												resultJSON.put("Message", Message.code400);
+												return callback + "(" + resultJSON.toString() + ")";
+											}finally{
+												if(tmpF.exists()){
+													tmpF.delete();
+												}
 											}
 										}
-									}
-									if(tmpF.exists()){
-										tmpF.delete();
+										if(tmpF.exists()){
+											tmpF.delete();
+										}
 									}
 								}
 								/////////////////////////////////////////
@@ -1199,7 +1639,6 @@ public class DataAPI  {
 							makeContentStr += tmpContent[m].replace(tmpText1, fileNames.get(tmpInt));
 							filesStr += fileNames.get(tmpInt) + ",";
 							tmpInt ++;
-//						}else if(tmpContent[m] != null && tmpContent[m].contains("turbosoft1")){
 						}else if(tmpContent[m] != null && tmpContent[m].contains("GeoCMS/")){
 							String tmpText1 = tmpContent[m].substring(0, tmpContent[m].lastIndexOf("GeoCMS/"));
 							makeContentStr += "<img src=\"";
@@ -1223,56 +1662,69 @@ public class DataAPI  {
 				}
 				
 				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				
-				param.clear();
-				param.put("loginId", loginId);
-				param.put("title", title);
-				param.put("content", content);
-				param.put("files", filesStr);
-				param.put("idx", idx);
-				param.put("shareType", shareType);
-				resultIntegerValue = dataDao.updateBoard(param);
-				
-				if(resultIntegerValue == 1) {
-					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-						tmpParam.put("shareIdx", idx);
-						tmpParam.put("shareKind", "GeoCMS");
-						
-						if("2".equals(shareType)){
-							if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
-								String[] shareTList = addShare.split(",");
-								tmpParam.put("shareTList", shareTList);
-								resultIntegerValue = userDao.insertShare(tmpParam);
-							}
-							if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){
-								String[] shareTList = removeShare.split(",");
-								tmpParam.put("shareTList", shareTList);
-								resultIntegerValue = userDao.deleteShare(tmpParam);
-							}
-							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
-								String[] editList = editYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
-								String[] editList = editNo.split(",");
-								tmpParam.put("editType", "N");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-						}else{
-							resultIntegerValue = userDao.deleteShare(tmpParam);
-						}
-					}
-					
-					resultJSON.put("Code", 100);
-					resultJSON.put("Message", Message.code100);
-				}else{
-					resultJSON.put("Code", 300);
-					resultJSON.put("Message", Message.code300);
-				}
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                TransactionStatus sts = txManager.getTransaction(def);
+                
+                try{
+                	param.clear();
+    				param.put("loginId", loginId);
+    				param.put("title", title);
+    				param.put("content", content);
+    				param.put("files", filesStr);
+    				param.put("idx", idx);
+    				param.put("shareType", shareType);
+    				param.put("tabIdx", tabIdx);
+    				resultIntegerValue = dataDao.updateBoard(param);
+    				
+    				if(resultIntegerValue == 1) {
+    					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+    						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+    						tmpParam.put("shareIdx", idx);
+    						tmpParam.put("shareKind", "GeoCMS");
+    						
+    						if("2".equals(shareType)){
+    							if(addShare != null && !"".equals(addShare) && !"null".equals(addShare)){
+    								String[] shareTList = addShare.split(",");
+    								tmpParam.put("shareTList", shareTList);
+    								resultIntegerValue = userDao.insertShare(tmpParam);
+    							}
+    							if(removeShare != null && !"".equals(removeShare) && !"null".equals(removeShare)){
+    								String[] shareTList = removeShare.split(",");
+    								tmpParam.put("shareTList", shareTList);
+    								resultIntegerValue = userDao.deleteShare(tmpParam);
+    							}
+    							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes)){
+    								String[] editList = editYes.split(",");
+    								tmpParam.put("editType", "Y");
+    								tmpParam.put("editList", editList);
+    								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+    							}
+    							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo)){
+    								String[] editList = editNo.split(",");
+    								tmpParam.put("editType", "N");
+    								tmpParam.put("editList", editList);
+    								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+    							}
+    						}else{
+    							resultIntegerValue = userDao.deleteShare(tmpParam);
+    						}
+    					}
+    					
+    					txManager.commit(sts);
+    					resultJSON.put("Code", 100);
+    					resultJSON.put("Message", Message.code100);
+    				}else{
+    					resultJSON.put("Code", 300);
+    					resultJSON.put("Message", Message.code300);
+    				}
+                }catch(Exception e){
+                	e.printStackTrace();
+                	txManager.rollback(sts);
+                	resultJSON.put("Code", 800);
+        			resultJSON.put("Message", Message.code800);
+                }
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
@@ -1523,6 +1975,7 @@ public class DataAPI  {
 		List<Object> resList = new ArrayList<Object>();
 		String shareType = "";
 		int startSeq = 0;
+		isServerUrl = false;
 		
 		//token
 		param.clear();
@@ -1604,11 +2057,10 @@ public class DataAPI  {
 			//파일 정보 저장 변수
 			ArrayList<Map<String,String>> fileList = new ArrayList<Map<String,String>>();
 			Map<String,String> fileMap = new HashMap<String, String>();
-			String saveUserPath = request.getSession().getServletContext().getRealPath("/")+ "upload";
-			File saveUserPathDir = new File(saveUserPath);
-		    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
-		    File tempDir = new File(saveUserPath+"/"+"tmp");
-			File uploadDir = new File(saveUserPath+"/"+ uploadType);
+			String saveUserPath = "";
+			File saveUserPathDir = null;
+		    File tempDir = null;
+			File uploadDir = null;
 			int fileIndex = 1;
 			List<String> saveFiles = new ArrayList<String>();
 		    List<String> origFiles = new ArrayList<String>();
@@ -1648,35 +2100,72 @@ public class DataAPI  {
 			TransactionStatus sts = txManager.getTransaction(def);
 			
 			try {
+				objParam = new HashMap<String, Object>();
+				objParam.put("selectYN", "Y");
+				
+				//get server
+				resultList = dataDao.selectServer(objParam);
+				
+				if(resultList != null && resultList.size() > 0){
+					Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+					if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+							serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+						isServerUrl = true;
+						b_serverUrl = serverParam.get("serverurl");
+						b_serverPort = String.valueOf(serverParam.get("serverport"));
+						b_serverId = serverParam.get("serverid");
+						b_serverPass = serverParam.get("serverpass");
+						b_serverPath = serverParam.get("serverpath");
+					}else{
+						b_serverPath = serverParam.get("serverpath");
+					}
+				}else{
+					b_serverPath = "upload";
+				}
+				
+				saveUserPath = request.getSession().getServletContext().getRealPath("/");
+				saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+						saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+						File.separator + b_serverPath;
+				
+				saveUserPathDir = new File(saveUserPath);
+			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+			    tempDir = new File(saveUserPath+"/"+"tmp");
+				uploadDir = new File(saveUserPath+"/"+ uploadType);
+				
 				if(isMultipart) {
-					ftp = new FTPClient(); // FTP Client 객체 생성 
-					ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-					ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+					if(isServerUrl){
+						ftp = new FTPClient(); // FTP Client 객체 생성 
+						ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+						ftp.setConnectTimeout(3000);
+						ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+						
+						reply = ftp.getReplyCode();//a
+						if(!FTPReply.isPositiveCompletion(reply)) {
+							ftp.disconnect();
+							resultJSON.put("Code", 400);
+							resultJSON.put("Message", Message.code400);
+							return callback + "(" + resultJSON.toString() + ")";
+					    }
+						
+						if(!ftp.login(b_serverId, b_serverPass)) {
+							ftp.logout();
+							resultJSON.put("Code", 400);
+							resultJSON.put("Message", Message.code400);
+							return callback + "(" + resultJSON.toString() + ")";
+					    }
+						
+						ftp.setFileType(FTP.BINARY_FILE_TYPE);
+					    ftp.enterLocalPassiveMode();
+			
+					    ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType); // 작업 디렉토리 변경
+					    reply = ftp.getReplyCode();
+					    if (reply == 550) {
+					    	ftp.makeDirectory(b_serverPath +"/" +uploadType);
+					    	ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType ); // 작업 디렉토리 변경
+					    }
+					}
 					
-					reply = ftp.getReplyCode();//a
-					if(!FTPReply.isPositiveCompletion(reply)) {
-						ftp.disconnect();
-						resultJSON.put("Code", 400);
-						resultJSON.put("Message", Message.code400);
-						return callback + "(" + resultJSON.toString() + ")";
-				    }
-					
-					if(!ftp.login(userIdStr, userPassStr)) {
-						ftp.logout();
-						resultJSON.put("Code", 400);
-						resultJSON.put("Message", Message.code400);
-						return callback + "(" + resultJSON.toString() + ")";
-				    }
-					
-					ftp.setFileType(FTP.BINARY_FILE_TYPE);
-				    ftp.enterLocalPassiveMode();
-		
-				    ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType); // 작업 디렉토리 변경
-				    reply = ftp.getReplyCode();
-				    if (reply == 550) {
-				    	ftp.makeDirectory(saveFilePathStr +"/" +uploadType);
-				    	ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType ); // 작업 디렉토리 변경
-				    }
 					//--------------------------------------------------------------------------------------------
 				    if(!tempDir.exists()) tempDir.mkdir();
 					if(!uploadDir.exists()) uploadDir.mkdir();
@@ -1688,6 +2177,7 @@ public class DataAPI  {
 					try {
 						MultipartParser parser = new MultipartParser(request, uploadMaxSize, true, true, "UTF-8");  /* file limit size of 1GB*/
 			            Part _part;
+						
 			            while ((_part = parser.readNextPart()) != null) {
 			                if (_part.isFile()) {
 			                	FilePart fPart = (FilePart) _part;  // get some info about the file
@@ -1699,9 +2189,25 @@ public class DataAPI  {
 			                    	fPart.setRenamePolicy(policy);
 			                    	fPart.writeTo(uploadDir);
 			                    	System.out.println("filePart.getFileName()) : " +fPart.getFileName());
-//			                    	
-			                    	saveFiles.add(saveUserPath+"/"+ "GeoPhoto"+"/"+fPart.getFileName());
-			                    	origFiles.add(name);
+			                    	/////////////////////////////////////////////////////////////////////
+			                    	param2.clear();
+									param2.put("fileName", name);
+									resList = dataDao.selectImageFileList(param2);
+									changeFileName = name;
+									prefix = name.substring(0, name.lastIndexOf("."));
+									suffix = name.substring(name.lastIndexOf("."));
+									while(resList != null && resList.size() > 0) {
+										changeFileName = prefix+"("+fileIndex+")"+suffix;
+										fileIndex++;
+										param2.clear();
+										param2.put("fileName", changeFileName);
+										resList = dataDao.selectImageFileList(param2);
+									}
+									File f1 = new File(saveUserPath+"/"+ "GeoPhoto"+"/"+fPart.getFileName());
+									f1.renameTo(new File(saveUserPath+"/"+ "GeoPhoto"+"/"+ changeFileName));
+									saveFiles.add(saveUserPath+"/"+ "GeoPhoto"+"/"+ changeFileName);
+			                    	origFiles.add(changeFileName);
+									////////////////////////////////////////////////////////////////////////
 			                    }
 			                }else{
 			                	ParamPart paramPart = (ParamPart) _part;
@@ -1763,9 +2269,6 @@ public class DataAPI  {
 					
 					for(int k=0; k< origFiles.size(); k++){
 						uploadFilePath = "";
-						prefix = "";
-						suffix = "";
-						changeFileName = "";
 						reseultData = "";
 						reseultDataArr = null;
 						datalongitude = "";
@@ -1774,66 +2277,47 @@ public class DataAPI  {
 						resultIntegerValue = 0;
 						fileMap = new HashMap<String, String>();
 						
-							fileName = origFiles.get(k);
-							fileIndex = 1;
-							param2.clear();
-							param2.put("fileName", fileName);
-							resList = dataDao.selectImageFileList(param2);
-							
-							changeFileName = fileName;
-							prefix = fileName.substring(0, fileName.lastIndexOf("."));
-							suffix = fileName.substring(fileName.lastIndexOf("."));
-							
-							while(resList != null && resList.size() > 0) {
-								changeFileName = prefix+"("+fileIndex+")"+suffix;
-								fileIndex++;
-								param2.clear();
-								param2.put("fileName", changeFileName);
-								resList = dataDao.selectImageFileList(param2);
-							}
-							
-							uploadFilePath = uploadDir + "/"+ changeFileName;
-							
-							System.out.println("uploadFile : "+uploadFilePath);
-							
-								//data save
-								objParam.clear();
-								objParam.put("sharetype", shareType);
-								objParam.put("loginid", loginId);
-								objParam.put("title", title);
-								objParam.put("content", content);
-								objParam.put("projectidx", projectIdx);
-								objParam.put("filename", changeFileName);
-								objParam.put("longitude", "0.0");
-								objParam.put("latitude", "0.0");
-								objParam.put("status", "PROGRESS");
-								
-								if(viewIdxArr.get(fileSeq) != null && !"".equals(viewIdxArr.get(fileSeq))){//-------------------------------------------------------------------------
-									nowSeq = Integer.valueOf(String.valueOf(viewIdxArr.get(fileSeq)));//-------------------------------------------------------------------------
-								}//-------------------------------------------------------------------------
-								nowSeq += startSeq;//-------------------------------------------------------------------------
-								objParam.put("seqnum", nowSeq);
-								objParam.put("dronetype", droneType);
-								fileSeq++;
-								
-								resultIntegerValue = dataDao.insertImage(objParam);
-								
-								fileMap.put("file", uploadFilePath);
-								fileMap.put("idx", String.valueOf(objParam.get("idx")));
-								fileList.add(fileMap);
-								logIdx +=  String.valueOf(objParam.get("idx"))+",";
-								
-								if(resultIntegerValue == 1) {
-									if(param != null){
-										if(shareType != null && "2".equals(shareType)){
-											param.put("shareIdx", String.valueOf(objParam.get("idx")));
-											param.put("shareKind", "GeoPhoto");
-											resultIntegerValue = userDao.insertShareFormProject(param);
-										}
-									}
+						fileName = origFiles.get(k);
+						uploadFilePath = uploadDir + "/"+ fileName;
+						
+						System.out.println("uploadFile : "+uploadFilePath);
+						
+						//data save
+						objParam.clear();
+						objParam.put("sharetype", shareType);
+						objParam.put("loginid", loginId);
+						objParam.put("title", title);
+						objParam.put("content", content);
+						objParam.put("projectidx", projectIdx);
+						objParam.put("filename", fileName);
+						objParam.put("longitude", "0.0");
+						objParam.put("latitude", "0.0");
+						objParam.put("status", "PROGRESS");
+						
+						if(viewIdxArr.get(fileSeq) != null && !"".equals(viewIdxArr.get(fileSeq))){//-------------------------------------------------------------------------
+							nowSeq = Integer.valueOf(String.valueOf(viewIdxArr.get(fileSeq)));//-------------------------------------------------------------------------
+						}//-------------------------------------------------------------------------
+						nowSeq += startSeq;//-------------------------------------------------------------------------
+						objParam.put("seqnum", nowSeq);
+						objParam.put("dronetype", droneType);
+						fileSeq++;
+						
+						resultIntegerValue = dataDao.insertImage(objParam);
+						
+						fileMap.put("file", uploadFilePath);
+						fileMap.put("idx", String.valueOf(objParam.get("idx")));
+						fileList.add(fileMap);
+						logIdx +=  String.valueOf(objParam.get("idx"))+",";
+						
+						if(resultIntegerValue == 1) {
+							if(param != null){
+								if(shareType != null && "2".equals(shareType)){
+									param.put("shareIdx", String.valueOf(objParam.get("idx")));
+									param.put("shareKind", "GeoPhoto");
+									resultIntegerValue = userDao.insertShareFormProject(param);
 								}
-		//					}
-//						}
+							}
+						}
 					}//end while
 				}//is multiple
 			} catch (Exception e) {
@@ -1873,7 +2357,7 @@ public class DataAPI  {
 			}
 			
 			
-			imageSaveStart(loginId, String.valueOf(logKey), fileList, saveFiles, "imageFile");
+			imageSaveStart(loginId, String.valueOf(logKey), fileList, saveFiles, "imageFile", isServerUrl);
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
 			if(resultIntegerValue > 0) {
@@ -1892,7 +2376,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 
-	@RequestMapping(value = "/cms/updateImage/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateImage/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{latitude}/{longitude}/{editYes}/{editNo}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateImageService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -1904,6 +2388,8 @@ public class DataAPI  {
 			, @PathVariable("addShareUser") String addShareUser
 			, @PathVariable("removeShareUser") String removeShareUser
 			, @PathVariable("xmlData") String xmlData
+			, @PathVariable("latitude") String latitude
+			, @PathVariable("longitude") String longitude
 			, @PathVariable("editYes") String editYes
 			, @PathVariable("editNo") String editNo
 			, Model model, HttpServletRequest request) {
@@ -1924,7 +2410,6 @@ public class DataAPI  {
 					resultJSON.put("Code", 205);
 					resultJSON.put("Message", Message.code205);
 					return callback + "(" + resultJSON.toString() + ")";
-					
 				}
 				
 				//update token time
@@ -1936,6 +2421,8 @@ public class DataAPI  {
 						
 				addShareUser = addShareUser.replace("&nbsp", "");
 				removeShareUser = removeShareUser.replace("&nbsp", "");
+				latitude = latitude.replace("&nbsp", "");
+				longitude = longitude.replace("&nbsp", "");
 				if(xmlData != null && !"".equals(xmlData) && !"null".equals(xmlData)){
 					xmlData = xmlData.replaceAll("&nbsp", "").replaceAll("&sbsp","/").replaceAll("&mbsp", "?").replaceAll("&pbsp", "#").replace("&obsp", ".");
 				}
@@ -1950,56 +2437,73 @@ public class DataAPI  {
 					return callback + "(" + resultJSON.toString() + ")";
 				}
 				
-				param.clear();
-				param.put("loginId", loginId);
-				param.put("idx", idx);
-				param.put("title", title);
-				param.put("content", content);
-				param.put("shareType", shareType);
-				param.put("xmlData", xmlData);
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                TransactionStatus sts = txManager.getTransaction(def);
 				
-				resultIntegerValue = dataDao.updateImage(param);
-				
-				if(resultIntegerValue == 1) {
-					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-						tmpParam.put("shareIdx", idx);
-						tmpParam.put("shareKind", "GeoPhoto");
-						
-						if("2".equals(shareType)){
-							if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser) && checkListIsNumber(addShareUser)){
-								String[] shareTList = addShareUser.split(",");
-								tmpParam.put("shareTList", shareTList);
-								resultIntegerValue = userDao.insertShare(tmpParam);
-							}
-							if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser) && checkListIsNumber(removeShareUser)){
-								String[] shareTList = removeShareUser.split(",");
-								tmpParam.put("shareTList", shareTList);
+				try{
+					param.clear();
+					param.put("loginId", loginId);
+					param.put("idx", idx);
+					param.put("title", title);
+					param.put("content", content);
+					param.put("shareType", shareType);
+					param.put("xmlData", xmlData);
+					param.put("latitude", latitude);
+					param.put("longitude", longitude);
+					
+					resultIntegerValue = dataDao.updateImage(param);
+					
+					if(resultIntegerValue == 1) {
+						if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+							tmpParam.put("shareIdx", idx);
+							tmpParam.put("shareKind", "GeoPhoto");
+							
+							if("2".equals(shareType)){
+								if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser) && checkListIsNumber(addShareUser)){
+									String[] shareTList = addShareUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue = userDao.insertShare(tmpParam);
+								}
+								if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser) && checkListIsNumber(removeShareUser)){
+									String[] shareTList = removeShareUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue = userDao.deleteShare(tmpParam);
+								}
+								if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && checkListIsNumber(editYes)){
+									String[] editList = editYes.split(",");
+									tmpParam.put("editType", "Y");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}
+								if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && checkListIsNumber(editNo)){
+									String[] editList = editNo.split(",");
+									tmpParam.put("editType", "N");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}
+							}else{
 								resultIntegerValue = userDao.deleteShare(tmpParam);
 							}
-							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && checkListIsNumber(editYes)){
-								String[] editList = editYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && checkListIsNumber(editNo)){
-								String[] editList = editNo.split(",");
-								tmpParam.put("editType", "N");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-						}else{
-							resultIntegerValue = userDao.deleteShare(tmpParam);
 						}
+						
+						resultJSON.put("Code", 100);
+						resultJSON.put("Message", Message.code100);
+					}else{
+						resultJSON.put("Code", 300);
+						resultJSON.put("Message", Message.code300);
 					}
+					txManager.commit(sts);
 					
-					resultJSON.put("Code", 100);
-					resultJSON.put("Message", Message.code100);
-				}else{
-					resultJSON.put("Code", 300);
-					resultJSON.put("Message", Message.code300);
+				}catch(Exception e){
+					e.printStackTrace();
+					txManager.rollback(sts);
+					resultJSON.put("Code", 800);
+					resultJSON.put("Message", Message.code800);
 				}
+				
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
@@ -2029,9 +2533,14 @@ public class DataAPI  {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
 		result = new HashMap<String, String>();
+		isServerUrl = false;
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		
 		String[] idxArray = null;
 		String fileFull = "";
+		
+		String saveUserPath = "";
+		File saveUserPathDir = null;
 		
 		//token
 		param.clear();
@@ -2062,45 +2571,85 @@ public class DataAPI  {
 				if(idxArr != null && !"".equals(idxArr) && !"null".equals(idxArr) ){
 					idxArray = idxArr.split(",");
 				}
-
+                
 				if(idxArray != null && idxArray.length > 0){
+					DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+	                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+	                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+	                TransactionStatus sts = txManager.getTransaction(def);
+	                
+	                objParam = new HashMap<String, Object>();
+					objParam.put("selectYN", "Y");
+					
+					//get server
+					resultList = dataDao.selectServer(objParam);
+					
+					if(resultList != null && resultList.size() > 0){
+						Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+						if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+								serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+							isServerUrl = true;
+							b_serverUrl = serverParam.get("serverurl");
+							b_serverPort = String.valueOf(serverParam.get("serverport"));
+							b_serverId = serverParam.get("serverid");
+							b_serverPass = serverParam.get("serverpass");
+							b_serverPath = serverParam.get("serverpath");
+						}else{
+							b_serverPath = serverParam.get("serverpath");
+						}
+					}else{
+						b_serverPath = "upload";
+					}
+					saveUserPath = request.getSession().getServletContext().getRealPath("/");
+					saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+							saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+							File.separator + b_serverPath;
+					
+					saveUserPathDir = new File(saveUserPath);
+				    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+				    saveUserPath = saveUserPath + File.separator + type;
+					saveUserPathDir = new File(saveUserPath);
+	                
 					try{
 						FTPClient ftp = null; // FTP Client 객체 
 						FileInputStream fis = null; // File Input Stream 
 						int reply = 0;
+						File tmpF1 = null;
 						
-						ftp = new FTPClient(); // FTP Client 객체 생성 
-						ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-						ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
-						
-						reply = ftp.getReplyCode();//a
-						if(!FTPReply.isPositiveCompletion(reply)) {
-							ftp.disconnect();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
-						
-						if(!ftp.login(userIdStr, userPassStr)) {
-							ftp.logout();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
-						
-						ftp.setFileType(FTP.BINARY_FILE_TYPE);
-					    ftp.enterLocalPassiveMode();
+						if(isServerUrl){
+							ftp = new FTPClient(); // FTP Client 객체 생성 
+							ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+							ftp.setConnectTimeout(3000);
+							ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+							
+							reply = ftp.getReplyCode();//a
+							if(!FTPReply.isPositiveCompletion(reply)) {
+								ftp.disconnect();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							if(!ftp.login(b_serverId, b_serverPass)) {
+								ftp.logout();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							ftp.setFileType(FTP.BINARY_FILE_TYPE);
+						    ftp.enterLocalPassiveMode();
 
-					    ftp.changeWorkingDirectory(saveFilePathStr +"/" +type); // 작업 디렉토리 변경
-					    reply = ftp.getReplyCode();
-					    if (reply == 550) {
-					    	ftp.makeDirectory(saveFilePathStr +"/" +type);
-					    	ftp.changeWorkingDirectory(saveFilePathStr +"/" +type ); // 작업 디렉토리 변경
-					    }
+						    ftp.changeWorkingDirectory(b_serverPath +"/" +type); // 작업 디렉토리 변경
+						    reply = ftp.getReplyCode();
+						    if (reply == 550) {
+						    	ftp.makeDirectory(b_serverPath +"/" +type);
+						    	ftp.changeWorkingDirectory(b_serverPath +"/" +type ); // 작업 디렉토리 변경
+						    }
+						}
 						
 						resultIntegerValue = 0;
 						param.clear();
-//						fileFull = "";
 						
 						param.put("loginId", loginId);
 						for(int i=0;i<idxArray.length;i++){
@@ -2165,22 +2714,50 @@ public class DataAPI  {
 										if(tmpFileArr != null && tmpFileArr.length > 0){
 											for(int j=0; j<tmpFileArr.length; j++){
 												try {
-													boolean isSuccess = ftp.deleteFile(tmpFileArr[j]);//파일삭제
+													boolean isSuccess = false;
+													if(isServerUrl){
+														isSuccess = ftp.deleteFile(tmpFileArr[j]);//파일삭제
+													}else{
+														tmpF1 = new File(saveUserPath + File.separator + tmpFileArr[j]);
+														if(tmpF1.exists()){
+															tmpF1.delete();
+															isSuccess = true;
+														}
+													}
 													if(isSuccess) {
 														System.out.println(fileFull + "파일 FTP 삭제 성공");
 													}
 													
 													if("GeoVideo".equals(type)){
 														String tmpChild1 = tmpFileArr[j];
-														tmpChild1 = tmpChild1.substring(0, tmpChild1.lastIndexOf("_ogg.ogg"));
-														isSuccess = ftp.deleteFile(tmpChild1+ "_thumb.jpg");//thumbnail 파일삭제
+														tmpChild1 = tmpChild1.substring(0, tmpChild1.lastIndexOf("_mp4.mp4"));
+														
+														if(isServerUrl){
+															isSuccess = ftp.deleteFile(tmpChild1+ "_thumb.jpg");//thumbnail 파일삭제
+														}else{
+															tmpF1 = new File(saveUserPath + File.separator + tmpChild1+ "_thumb.jpg");
+															if(tmpF1.exists()){
+																tmpF1.delete();
+																isSuccess = true;
+															}
+														}
+														
 														if(isSuccess) {
 															System.out.println(tmpChild1+ "_thumb.jpg" + "파일 FTP 삭제 성공");
 														}
 														if(j == 0){
-															isSuccess = ftp.deleteFile(tmpChild1+ "_ogg.gpx");//gpx 파일삭제
+															if(isServerUrl){
+																isSuccess = ftp.deleteFile(tmpChild1+ "_mp4.gpx");//gpx 파일삭제
+															}else{
+																tmpF1 = new File(saveUserPath + File.separator + tmpChild1+ "_mp4.gpx");
+																if(tmpF1.exists()){
+																	tmpF1.delete();
+																	isSuccess = true;
+																}
+															}
+															
 															if(isSuccess) {
-																System.out.println(tmpChild1+ "_ogg.gpx" + "파일 FTP 삭제 성공");
+																System.out.println(tmpChild1+ "_mp4.gpx" + "파일 FTP 삭제 성공");
 															}
 														}
 													}
@@ -2213,8 +2790,10 @@ public class DataAPI  {
 								resultJSON.put("Message", Message.code300);
 							}
 						}//for
+						txManager.commit(sts);
 					}catch(Exception e){
 						e.printStackTrace();
+						txManager.rollback(sts);
 						resultJSON.put("Code", 400);
 						resultJSON.put("Message", Message.code400);
 						return callback + "(" + resultJSON.toString() + ")";
@@ -2445,7 +3024,7 @@ public class DataAPI  {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/saveVideoAll/{token}/{loginId}/{title}/{content}/{projectIdx}/{droneType}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/saveVideoAll/{token}/{loginId}/{title}/{content}/{projectIdx}/{droneType}/{gpsFileTypeData}/{chkVideoGps}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String saveVideoService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -2454,6 +3033,8 @@ public class DataAPI  {
 			, @PathVariable("content") String content
 			, @PathVariable("projectIdx") String projectIdx
 			, @PathVariable("droneType") String droneType
+			, @PathVariable("gpsFileTypeData") String gpsFileTypeData
+			, @PathVariable("chkVideoGps") String chkVideoGps
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
@@ -2463,6 +3044,8 @@ public class DataAPI  {
 		List<Object> childResult = new ArrayList<Object>();
 		int startSeq = 0;
 		int nowSeq = 1;
+		isServerUrl = false;
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
 
 		//token
 		param.clear();
@@ -2485,7 +3068,6 @@ public class DataAPI  {
 					resultJSON.put("Message", Message.code600);
 					return callback + "(" + resultJSON.toString() + ")";
 				}
-				
 				//////////////////////////////////////////////////////////////////////////////////////////
 				try {
 					request.setCharacterEncoding("utf-8");
@@ -2556,9 +3138,8 @@ public class DataAPI  {
 				List<Map<String, String>> files = new ArrayList<Map<String, String>>();
 				ArrayList<String> filesXml = new ArrayList<String>();
 				ArrayList<FileItem> fileItemList = new ArrayList<FileItem>();
-				String saveUserPath = request.getSession().getServletContext().getRealPath("/")+ "upload";
-				File saveUserPathDir = new File(saveUserPath);
-			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+				String saveUserPath = "";
+				File saveUserPathDir = null;
 				
 				//파일 업로드
 				boolean isMultipart = ServletFileUpload.isMultipartContent(request); // 멀티파트인지 체크
@@ -2579,6 +3160,38 @@ public class DataAPI  {
 				
 				try {
 					if(isMultipart) {
+						
+						objParam = new HashMap<String, Object>();
+						objParam.put("selectYN", "Y");
+						
+						//get server
+						resultList = dataDao.selectServer(objParam);
+						
+						if(resultList != null && resultList.size() > 0){
+							Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+							if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+									serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+								isServerUrl = true;
+								b_serverUrl = serverParam.get("serverurl");
+								b_serverPort = String.valueOf(serverParam.get("serverport"));
+								b_serverId = serverParam.get("serverid");
+								b_serverPass = serverParam.get("serverpass");
+								b_serverPath = serverParam.get("serverpath");
+							}else{
+								b_serverPath = serverParam.get("serverpath");
+							}
+						}else{
+							b_serverPath = "upload";
+						}
+						
+						saveUserPath = request.getSession().getServletContext().getRealPath("/");
+						saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+								saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+								File.separator + b_serverPath;
+						
+						saveUserPathDir = new File(saveUserPath);
+					    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+						
 						int uploadMaxSize = 2*1024*1024*1024; //1024MB = 1GB
 						tempDir = new File(saveUserPath+"/"+"tmp");
 						uploadDir = new File(saveUserPath);
@@ -2612,13 +3225,13 @@ public class DataAPI  {
 						int gpxFileIndex = 1;
 						File uploadFile;
 						String oldSubfix = "";
-						File tmpGpxFilePathDir = new File(uploadDir+File.separator+ loginId +"_"+ logKey);///
-						if(!tmpGpxFilePathDir.exists()) tmpGpxFilePathDir.mkdir();////
+						File tmpGpxFilePathDir = uploadDir;
 						String tmpGpxFilePath = "";
 						String tmpGpxFileName = "";
 						String prefix = "";
 						String suffix = "";
 						String tmpPathStr = "";
+						String oneSubFix = "";
 						HashMap<String, Object> childParam = new HashMap<String, Object>();
 						
 						while(iter.hasNext()) {
@@ -2637,6 +3250,7 @@ public class DataAPI  {
 							childIndex = 0;
 							tmpPathStr = "";
 							nowSeq = 1;
+							oneSubFix = "";
 							
 							item = (FileItem)iter.next();
 							if(!item.isFormField()) {
@@ -2653,38 +3267,59 @@ public class DataAPI  {
 									fileItemList.add(item);
 									oldSubfix = fileName.substring(fileName.lastIndexOf("."));
 									
-									if(fileName.indexOf(".gpx") > 0){
-										tmpGpxFilePath = tmpGpxFilePathDir + File.separator + fileName;
-										tmpGpxFileName = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."))+"_ogg.gpx";
-										prefix = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."));
-										uploadFile  = new File(tmpGpxFilePath);
-										
-										while((uploadFile = new File(tmpGpxFileName)).exists()) {
-											suffix = "_ogg.gpx";
-											tmpGpxFileName = prefix+"("+gpxFileIndex+")"+suffix;
-											gpxFileIndex++;
-											uploadFile = new File(tmpGpxFileName);
+									if(fileName.indexOf(".gpx") > 0 || fileName.indexOf(".GPX") > 0){
+										if("2".equals(gpsFileTypeData)){
+											tmpGpxFilePath = tmpGpxFilePathDir + File.separator + fileName;
+											tmpGpxFileName = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."))+"_mp4.gpx";
+											prefix = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."));
+											uploadFile  = new File(tmpGpxFilePath);
+											
+											while((uploadFile = new File(tmpGpxFileName)).exists()) {
+												suffix = "_mp4.gpx";
+												tmpGpxFileName = prefix+"("+gpxFileIndex+")"+suffix;
+												gpxFileIndex++;
+												uploadFile = new File(tmpGpxFileName);
+											}
+											filesMap.put("file", tmpGpxFileName);
+											filesMap.put("idx", null);
+											files.add(filesMap);
+											filesXml.add(tmpGpxFileName);
 										}
-										filesMap.put("file", tmpGpxFileName);
-										filesMap.put("idx", null);
-										files.add(filesMap);
-										filesXml.add(tmpGpxFileName);
+									}else if(fileName.indexOf(".srt") > 0 || fileName.indexOf(".SRT") > 0){
+										if("3".equals(gpsFileTypeData)){
+											tmpGpxFilePath = tmpGpxFilePathDir + File.separator + fileName;
+											tmpGpxFileName = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."))+"_mp4.srt";
+											prefix = tmpGpxFilePath.substring(0, tmpGpxFilePath.lastIndexOf("."));
+											uploadFile  = new File(tmpGpxFilePath);
+											
+											while((uploadFile = new File(tmpGpxFileName)).exists()) {
+												suffix = "_mp4.srt";
+												tmpGpxFileName = prefix+"("+gpxFileIndex+")"+suffix;
+												gpxFileIndex++;
+												uploadFile = new File(tmpGpxFileName);
+											}
+											filesMap.put("file", tmpGpxFileName);
+											filesMap.put("idx", null);
+											files.add(filesMap);
+											filesXml.add(tmpGpxFileName);
+										}
 									}else{
 										prefix = fileName.substring(0, fileName.lastIndexOf("."));
-										changeFileName = prefix +  "_ogg.ogg";
+										oneSubFix = fileName.substring(fileName.lastIndexOf("."));
+										changeFileName = prefix +  "_mp4.mp4";
 										param2.clear();
 										param2.put("contentKind", "GeoVideo");
 										param2.put("fileName", changeFileName);
 										childResult = dataDao.selectContentChildList(param2);
 										while(childResult != null && childResult.size() > 0) {
-											suffix = "_ogg.ogg";
+											suffix = "_mp4.mp4";
 											changeFileName = prefix+"("+fileIndex+")"+suffix;
 											fileIndex++;
 											param2.put("fileName", changeFileName);
 											childResult = dataDao.selectContentChildList(param2);
 										}
 										
-										saveFileName = changeFileName.substring(0, changeFileName.lastIndexOf("_ogg"));
+										saveFileName = changeFileName.substring(0, changeFileName.lastIndexOf("_mp4"));
 										
 										//data save
 										title = title.replaceAll("&sbsp","/");
@@ -2692,10 +3327,10 @@ public class DataAPI  {
 
 										//data save end
 										if(startYn != null && "Y".equals(startYn)){
-											saveFileNameOrg = saveFileName;
+											saveFileNameOrg = saveFileName + oneSubFix;
 											startYn = "N";
 											param.put("thumbnail", saveFileName+"_thumb.jpg");
-											param.put("filename", saveFileName+"_ogg.ogg");
+											param.put("filename", saveFileName+"_mp4.mp4");
 											param.put("originname", saveFileName+ oldSubfix);
 											
 											nowSeq += startSeq;
@@ -2737,6 +3372,9 @@ public class DataAPI  {
 										tmpPathStr = tmpGpxFilePathDir+File.separator+ saveFileName + oldSubfix;
 										filesMap.put("file", tmpPathStr);
 										filesMap.put("idx", String.valueOf(childIndex));
+										if(chkVideoGps.equals(item.getFieldName())){
+											filesMap.put("gps", "Y");
+										}
 										files.add(filesMap);
 									}
 									
@@ -2774,7 +3412,7 @@ public class DataAPI  {
 							resultJSON.put("Message", Message.code300);
 							return callback + "(" + resultJSON.toString() + ")";
 						}
-						videoSaveStart(loginId, String.valueOf(logKey), saveFileNameOrg, String.valueOf(parentIndex), files, filesXml, fileItemList, saveUserPath, "videoFile");
+						videoSaveStart(loginId, String.valueOf(logKey), saveFileNameOrg, String.valueOf(parentIndex), files, filesXml, fileItemList, saveUserPath, gpsFileTypeData, "videoFile", isServerUrl);
 					}else{
 						resultJSON.put("Code", 300);
 						resultJSON.put("Message", Message.code300);
@@ -2865,54 +3503,67 @@ public class DataAPI  {
 					return callback + "(" + resultJSON.toString() + ")";
 				}
 				
-				param.clear();
-				param.put("loginId", loginId);
-				param.put("idx", idx);
-				param.put("title", title);
-				param.put("content", content);
-				param.put("shareType", shareType);
-				param.put("xmlData", xmlData);
-				resultIntegerValue = dataDao.updateVideo(param);
-				
-				if(resultIntegerValue == 1) {
-					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType) && checkContentListType(shareType, "shareType")){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-						tmpParam.put("shareIdx", idx);
-						tmpParam.put("shareKind", "GeoVideo");
-						
-						if("2".equals(shareType)){
-							if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser) && checkListIsNumber(addShareUser)){
-								String[] shareTList = addShareUser.split(",");
-								tmpParam.put("shareTList", shareTList);
-								resultIntegerValue = userDao.insertShare(tmpParam);
-							}
-							if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser) && checkListIsNumber(removeShareUser)){
-								String[] shareTList = removeShareUser.split(",");
-								tmpParam.put("shareTList", shareTList);
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                TransactionStatus sts = txManager.getTransaction(def);
+                
+				try{
+					param.clear();
+					param.put("loginId", loginId);
+					param.put("idx", idx);
+					param.put("title", title);
+					param.put("content", content);
+					param.put("shareType", shareType);
+					param.put("xmlData", xmlData);
+					resultIntegerValue = dataDao.updateVideo(param);
+					
+					if(resultIntegerValue == 1) {
+						if(shareType != null && !"".equals(shareType) && !"null".equals(shareType) && checkContentListType(shareType, "shareType")){
+							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+							tmpParam.put("shareIdx", idx);
+							tmpParam.put("shareKind", "GeoVideo");
+							
+							if("2".equals(shareType)){
+								if(addShareUser != null && !"".equals(addShareUser) && !"null".equals(addShareUser) && checkListIsNumber(addShareUser)){
+									String[] shareTList = addShareUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue = userDao.insertShare(tmpParam);
+								}
+								if(removeShareUser != null && !"".equals(removeShareUser) && !"null".equals(removeShareUser) && checkListIsNumber(removeShareUser)){
+									String[] shareTList = removeShareUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue = userDao.deleteShare(tmpParam);
+								}
+								if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && checkListIsNumber(editYes)){
+									String[] editList = editYes.split(",");
+									tmpParam.put("editType", "Y");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}
+								if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && checkListIsNumber(editNo)){
+									String[] editList = editNo.split(",");
+									tmpParam.put("editType", "N");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}
+							}else{
 								resultIntegerValue = userDao.deleteShare(tmpParam);
 							}
-							if(editYes != null && !"".equals(editYes) && !"null".equals(editYes) && checkListIsNumber(editYes)){
-								String[] editList = editYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-							if(editNo != null && !"".equals(editNo) && !"null".equals(editNo) && checkListIsNumber(editNo)){
-								String[] editList = editNo.split(",");
-								tmpParam.put("editType", "N");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
-							}
-						}else{
-							resultIntegerValue = userDao.deleteShare(tmpParam);
+							txManager.commit(sts);
+							
+							resultJSON.put("Code", 100);
+							resultJSON.put("Message", Message.code100);
 						}
-						resultJSON.put("Code", 100);
-						resultJSON.put("Message", Message.code100);
+					}else{
+						resultJSON.put("Code", 300);
+						resultJSON.put("Message", Message.code300);
 					}
-				}else{
-					resultJSON.put("Code", 300);
-					resultJSON.put("Message", Message.code300);
+				}catch(Exception e){
+					e.printStackTrace();
+					txManager.rollback(sts);
 				}
+				
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
@@ -3007,14 +3658,6 @@ public class DataAPI  {
 		
 		try {
 			result = userDao.selectUid(param);
-			
-//			if(result != null){
-//				boolean chkTokenToid = tokenToLoginId(token, loginId);
-//				if(!chkTokenToid){
-//					resultJSON.put("Code", 205);
-//					resultJSON.put("Message", Message.code205);
-//					return callback + "(" + resultJSON.toString() + ")";
-//				}
 				
 				pageNum = pageNum.replace("&nbsp", "");
 				contentNum = contentNum.replace("&nbsp", "");
@@ -3092,10 +3735,6 @@ public class DataAPI  {
 					resultJSON.put("Code", 600);
 					resultJSON.put("Message", Message.code600);
 				}
-//			}else{
-//				resultJSON.put("Code", 203);
-//				resultJSON.put("Message", Message.code203);
-//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			resultJSON.put("Code", 800);
@@ -3151,54 +3790,67 @@ public class DataAPI  {
 					param.put("uid", String.valueOf(result.get("uid")));
 					resultIntegerValue = userDao.updateTokenTime(param);
 					
-					projectName = dataReplaceFun(projectName);
-					shareUser = shareUser.replace("&nbsp", "");
-					projectEditYes = projectEditYes.replace("&nbsp", "");
-					
-					param.clear();
-					param.put("loginId", loginId);
-					param.put("projectName", projectName);
-					param.put("shareType", shareType);
-					resultIntegerValue = dataDao.insertProject(param);
-					
-					if(shareType != null && "2".equals(shareType) && shareUser != null && !"".equals(shareUser) && !"null".equals(shareUser)){
-						if(checkListIsNumber(shareUser)){
-							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-							String[] shareTList = shareUser.split(",");
-							tmpParam.put("shareTList", shareTList);
-							tmpParam.put("shareIdx", param.get("idx"));
-							tmpParam.put("shareKind", "GeoProject");
-							resultIntegerValue = userDao.insertShare(tmpParam);
-							
-							if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes) && checkListIsNumber(projectEditYes)){
-								String[] editList = projectEditYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue = userDao.updateShareEdit(tmpParam);
+					DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+	                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+	                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+	                TransactionStatus sts = txManager.getTransaction(def);
+	                
+	                try{
+						projectName = dataReplaceFun(projectName);
+						shareUser = shareUser.replace("&nbsp", "");
+						projectEditYes = projectEditYes.replace("&nbsp", "");
+						
+						param.clear();
+						param.put("loginId", loginId);
+						param.put("projectName", projectName);
+						param.put("shareType", shareType);
+						resultIntegerValue = dataDao.insertProject(param);
+						
+						if(shareType != null && "2".equals(shareType) && shareUser != null && !"".equals(shareUser) && !"null".equals(shareUser)){
+							if(checkListIsNumber(shareUser)){
+								HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+								String[] shareTList = shareUser.split(",");
+								tmpParam.put("shareTList", shareTList);
+								tmpParam.put("shareIdx", param.get("idx"));
+								tmpParam.put("shareKind", "GeoProject");
+								resultIntegerValue = userDao.insertShare(tmpParam);
+								
+								if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes) && checkListIsNumber(projectEditYes)){
+									String[] editList = projectEditYes.split(",");
+									tmpParam.put("editType", "Y");
+									tmpParam.put("editList", editList);
+									resultIntegerValue = userDao.updateShareEdit(tmpParam);
+								}else{
+									resultJSON.put("Code", 600);
+									resultJSON.put("Message", Message.code600);
+									return callback + "(" + resultJSON.toString() + ")";
+								}
 							}else{
 								resultJSON.put("Code", 600);
 								resultJSON.put("Message", Message.code600);
 								return callback + "(" + resultJSON.toString() + ")";
 							}
-						}else{
-							resultJSON.put("Code", 600);
-							resultJSON.put("Message", Message.code600);
-							return callback + "(" + resultJSON.toString() + ")";
 						}
-					}
-					
-					if(param != null && param.get("idx") != null){
-						saveIdx = String.valueOf(param.get("idx"));
-					}
-					
-					if(resultIntegerValue > 0) {
-						resultJSON.put("Code", 100);
-						resultJSON.put("Message", Message.code100);
-						resultJSON.put("Data", saveIdx);
-					}else{
-						resultJSON.put("Code", 300);
-						resultJSON.put("Message", Message.code300);
-					}
+						
+						if(param != null && param.get("idx") != null){
+							saveIdx = String.valueOf(param.get("idx"));
+						}
+						txManager.commit(sts);
+						
+						if(resultIntegerValue > 0) {
+							resultJSON.put("Code", 100);
+							resultJSON.put("Message", Message.code100);
+							resultJSON.put("Data", saveIdx);
+						}else{
+							resultJSON.put("Code", 300);
+							resultJSON.put("Message", Message.code300);
+						}
+	                }catch(Exception e){
+	                	e.printStackTrace();
+	                	txManager.rollback(sts);
+	                	resultJSON.put("Code", 800);
+	        			resultJSON.put("Message", Message.code800);
+	                }
 				}else{
 					resultJSON.put("Code", 600);
 					resultJSON.put("Message", Message.code600);
@@ -3264,103 +3916,124 @@ public class DataAPI  {
 					param.put("uid", String.valueOf(result.get("uid")));
 					resultIntegerValue = userDao.updateTokenTime(param);
 					
-					projectName = dataReplaceFun(projectName);
-					shareAddUser = shareAddUser.replace("&nbsp", "");
-					shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
-					projectEditYes = projectEditYes.replace("&nbsp", "");
-					projectEditNo = projectEditNo.replace("&nbsp", "");
-					shareType = shareType.replace("&nbsp", "");
-					
-					param.clear();
-					param.put("loginId", loginId);
-					if(projectName != null && !"".equals(projectName)){
-						param.put("projectName", projectName);
-					}
-					
-					if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
-						if(checkContentListType(shareType, "shareType")){
-							param.put("shareType", shareType);
-						}else{
-							resultJSON.put("Code", 600);
-							resultJSON.put("Message", Message.code600);
-							return callback + "(" + resultJSON.toString() + ")";
-						}
-					}
-					param.put("idx", projectIdx);
-					resultIntegerValue = dataDao.updateProject(param);
-					
-					if(resultIntegerValue == 1 && shareType != null && !"".equals(shareType) && !"null".equals(shareType) && checkContentListType(shareType, "shareType")){
-						HashMap<String, Object> tmpParam = new HashMap<String, Object>();
-						tmpParam.put("shareIdx", projectIdx);
-						tmpParam.put("shareKind", "GeoProject");
+					DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+	                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+	                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+	                TransactionStatus sts = txManager.getTransaction(def);
+	                
+					try{
+						projectName = dataReplaceFun(projectName);
+						shareAddUser = shareAddUser.replace("&nbsp", "");
+						shareRemoveUser = shareRemoveUser.replace("&nbsp", "");
+						projectEditYes = projectEditYes.replace("&nbsp", "");
+						projectEditNo = projectEditNo.replace("&nbsp", "");
+						shareType = shareType.replace("&nbsp", "");
 						
-						if("2".equals(shareType)){
-							if(shareAddUser != null && !"".equals(shareAddUser) && !"null".equals(shareAddUser) && checkListIsNumber(shareAddUser)){
-								String[] shareTList = shareAddUser.split(",");
-								tmpParam.put("shareTList", shareTList);
-								resultIntegerValue += userDao.insertShare(tmpParam);
+						param.clear();
+						param.put("loginId", loginId);
+						if(projectName != null && !"".equals(projectName)){
+							param.put("projectName", projectName);
+						}
+						
+						if(shareType != null && !"".equals(shareType) && !"null".equals(shareType)){
+							if(checkContentListType(shareType, "shareType")){
+								param.put("shareType", shareType);
+							}else{
+								resultJSON.put("Code", 600);
+								resultJSON.put("Message", Message.code600);
+								return callback + "(" + resultJSON.toString() + ")";
 							}
-							if(shareRemoveUser != null && !"".equals(shareRemoveUser) && !"null".equals(shareRemoveUser) && checkListIsNumber(shareRemoveUser)){
-								String[] shareTList = shareRemoveUser.split(",");
-								tmpParam.put("shareTList", shareTList);
+						}
+						param.put("idx", projectIdx);
+						resultIntegerValue = dataDao.updateProject(param);
+						
+						if(resultIntegerValue == 1 && shareType != null && !"".equals(shareType) && !"null".equals(shareType) && checkContentListType(shareType, "shareType")){
+							HashMap<String, Object> tmpParam = new HashMap<String, Object>();
+							tmpParam.put("shareIdx", projectIdx);
+							tmpParam.put("shareKind", "GeoProject");
+							
+							if("2".equals(shareType)){
+								if(shareAddUser != null && !"".equals(shareAddUser) && !"null".equals(shareAddUser) && checkListIsNumber(shareAddUser)){
+									String[] shareTList = shareAddUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue += userDao.insertShare(tmpParam);
+								}
+								if(shareRemoveUser != null && !"".equals(shareRemoveUser) && !"null".equals(shareRemoveUser) && checkListIsNumber(shareRemoveUser)){
+									String[] shareTList = shareRemoveUser.split(",");
+									tmpParam.put("shareTList", shareTList);
+									resultIntegerValue += userDao.deleteShare(tmpParam);
+								}
+								
+								if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes) && checkListIsNumber(projectEditYes)){
+									String[] editList = projectEditYes.split(",");
+									tmpParam.put("editType", "Y");
+									tmpParam.put("editList", editList);
+									resultIntegerValue += userDao.updateShareEdit(tmpParam);
+								}
+								
+								if(projectEditNo != null && !"".equals(projectEditNo) && !"null".equals(projectEditNo) && checkListIsNumber(projectEditNo)){
+									String[] editList = projectEditNo.split(",");
+									tmpParam.put("editType", "N");
+									tmpParam.put("editList", editList);
+									resultIntegerValue += userDao.updateShareEdit(tmpParam);
+								}
+							}else{
 								resultIntegerValue += userDao.deleteShare(tmpParam);
 							}
 							
-							if(projectEditYes != null && !"".equals(projectEditYes) && !"null".equals(projectEditYes) && checkListIsNumber(projectEditYes)){
-								String[] editList = projectEditYes.split(",");
-								tmpParam.put("editType", "Y");
-								tmpParam.put("editList", editList);
-								resultIntegerValue += userDao.updateShareEdit(tmpParam);
-							}
+							//image 
+							HashMap<String, String> imgTmp = new HashMap<String, String>();
+							HashMap<String, Object> imgTmp2 = new HashMap<String, Object>();
+							imgTmp.put("projectIdx", projectIdx);
+							resultList = dataDao.selectProjectContentList(imgTmp);
 							
-							if(projectEditNo != null && !"".equals(projectEditNo) && !"null".equals(projectEditNo) && checkListIsNumber(projectEditNo)){
-								String[] editList = projectEditNo.split(",");
-								tmpParam.put("editType", "N");
-								tmpParam.put("editList", editList);
-								resultIntegerValue += userDao.updateShareEdit(tmpParam);
-							}
-						}else{
-							resultIntegerValue += userDao.deleteShare(tmpParam);
-						}
-						
-						//image 
-						HashMap<String, String> imgTmp = new HashMap<String, String>();
-						HashMap<String, Object> imgTmp2 = new HashMap<String, Object>();
-						imgTmp.put("projectIdx", projectIdx);
-						resultList = dataDao.selectProjectContentList(imgTmp);
-						
-						if(resultList != null && resultList.size()>0){
-							for(int a=0;a<resultList.size();a++){
-								HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(a);
-								if(tmpMap != null){
-									//�대�吏�怨듭� ��� 蹂�꼍
-									tmpMap.put("moveContent", String.valueOf(tmpMap.get("idx")));
-									tmpMap.put("shareType", shareType);
-									resultIntegerValue += dataDao.updateImageMove(tmpMap);
-									
-									//怨듭� ��� ���
-									imgTmp2 = new HashMap<String, Object>();
-									imgTmp2.put("shareIdx", String.valueOf(tmpMap.get("idx")));
-									imgTmp2.put("shareKind", tmpMap.get("datakind"));
-									resultIntegerValue += userDao.deleteShare(imgTmp2);
-									
-									if("2".equals(shareType)){
-										//怨듭� ��� 異��
-										imgTmp.put("shareIdx", String.valueOf(tmpMap.get("idx")));
-										imgTmp.put("shareKind", tmpMap.get("datakind"));
-										resultIntegerValue += userDao.insertShareFormProject(imgTmp);
+							if(resultList != null && resultList.size()>0){
+								for(int a=0;a<resultList.size();a++){
+									HashMap<String, String> tmpMap = (HashMap<String, String>)resultList.get(a);
+									if(tmpMap != null){
+										if(tmpMap.get("datakind") != null){
+											//datakind change
+											if("GeoPhoto".equals(tmpMap.get("datakind"))){
+												tmpMap.put("moveContent", String.valueOf(tmpMap.get("idx")));
+												tmpMap.put("shareType", shareType);
+												resultIntegerValue += dataDao.updateImageMove(tmpMap);
+											}else if("GeoVideo".equals(tmpMap.get("datakind"))){
+												tmpMap.put("moveContent", String.valueOf(tmpMap.get("idx")));
+												tmpMap.put("shareType", shareType);
+												resultIntegerValue += dataDao.updateVideoMove(tmpMap);
+											}
+											
+											//share type change
+											imgTmp2 = new HashMap<String, Object>();
+											imgTmp2.put("shareIdx", String.valueOf(tmpMap.get("idx")));
+											imgTmp2.put("shareKind", tmpMap.get("datakind"));
+											resultIntegerValue += userDao.deleteShare(imgTmp2);
+											
+											if("2".equals(shareType)){
+												//share user insert
+												imgTmp.put("shareIdx", String.valueOf(tmpMap.get("idx")));
+												imgTmp.put("shareKind", tmpMap.get("datakind"));
+												resultIntegerValue += userDao.insertShareFormProject(imgTmp);
+											}
+										}
 									}
-									
 								}
 							}
 						}
-					}
-					if(resultIntegerValue > 0) {
-						resultJSON.put("Code", 100);
-						resultJSON.put("Message", Message.code100);
-					}else{
-						resultJSON.put("Code", 300);
-						resultJSON.put("Message", Message.code300);
+						txManager.commit(sts);
+						
+						if(resultIntegerValue > 0) {
+							resultJSON.put("Code", 100);
+							resultJSON.put("Message", Message.code100);
+						}else{
+							resultJSON.put("Code", 300);
+							resultJSON.put("Message", Message.code300);
+						}
+					}catch(Exception e){
+						e.printStackTrace();
+						txManager.rollback(sts);
+						resultJSON.put("Code", 800);
+						resultJSON.put("Message", Message.code800);
 					}
 					
 			}else{
@@ -3471,66 +4144,82 @@ public class DataAPI  {
 								}
 								
 								if(resCheck){
-									int startSeq = 1;
-									int nowSeq = 1;
-									result2 = dataDao.selectProjectMaxSeq(param);
-									if(result2 != null){
-										if(result2.get("max_seq") != null && result2.get("max_seq") != ""){
-											startSeq = Integer.valueOf(String.valueOf(result2.get("max_seq")));
-										}
-									}
 									
-									for(int i=0; i<moveContentList.length; i++){
-										if(moveContentList[i] != null){
-											nowSeq = startSeq + 1 +i;
-											String[] tmpMv = moveContentList[i].split("_");
-											if(tmpMv[0] != null && ("GeoPhoto".equals(tmpMv[0]) || "GeoVideo".equals(tmpMv[0])) && tmpMv[1] != null && tmpMv[1] != "" && StringUtils.isNumeric(tmpMv[1]) ){
-												if("GeoPhoto".equals(tmpMv[0])){
-													param.put("moveContent", tmpMv[1]);
-													param.put("nowSeq", String.valueOf(nowSeq));
-													resultIntegerValue = dataDao.updateImageMove(param);
-													
-													//share user delete
-													tmpParam = new HashMap<String, Object>();
-													tmpParam.put("shareIdx", tmpMv[1]);
-													tmpParam.put("shareKind","GeoPhoto");
-													resultIntegerValue += userDao.deleteShare(tmpParam);
-													
-													if("2".equals(moveProISShare)){
-														//share user add
-														param.put("shareIdx", String.valueOf(tmpMv[1]));
-														param.put("shareKind", "GeoPhoto");
-														resultIntegerValue += userDao.insertShareFormProject(param);
+									DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+					                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+					                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+					                TransactionStatus sts = txManager.getTransaction(def);
+					                
+					                try{
+					                	int startSeq = 1;
+										int nowSeq = 1;
+										result2 = dataDao.selectProjectMaxSeq(param);
+										if(result2 != null){
+											if(result2.get("max_seq") != null && result2.get("max_seq") != ""){
+												startSeq = Integer.valueOf(String.valueOf(result2.get("max_seq")));
+											}
+										}
+										
+										for(int i=0; i<moveContentList.length; i++){
+											if(moveContentList[i] != null){
+												nowSeq = startSeq + 1 +i;
+												String[] tmpMv = moveContentList[i].split("_");
+												if(tmpMv[0] != null && ("GeoPhoto".equals(tmpMv[0]) || "GeoVideo".equals(tmpMv[0])) && tmpMv[1] != null && tmpMv[1] != "" && StringUtils.isNumeric(tmpMv[1]) ){
+													if("GeoPhoto".equals(tmpMv[0])){
+														param.put("moveContent", tmpMv[1]);
+														param.put("nowSeq", String.valueOf(nowSeq));
+														resultIntegerValue = dataDao.updateImageMove(param);
+														
+														//share user delete
+														tmpParam = new HashMap<String, Object>();
+														tmpParam.put("shareIdx", tmpMv[1]);
+														tmpParam.put("shareKind","GeoPhoto");
+														resultIntegerValue += userDao.deleteShare(tmpParam);
+														
+														if("2".equals(moveProISShare)){
+															//share user add
+															param.put("shareIdx", String.valueOf(tmpMv[1]));
+															param.put("shareKind", "GeoPhoto");
+															resultIntegerValue += userDao.insertShareFormProject(param);
+														}
+													}else if("GeoVideo".equals(tmpMv[0])){
+														param.put("moveContent", tmpMv[1]);
+														param.put("nowSeq", String.valueOf(nowSeq));
+														resultIntegerValue = dataDao.updateVideoMove(param);
+														
+														//share user delete
+														tmpParam = new HashMap<String, Object>();
+														tmpParam.put("shareIdx", tmpMv[1]);
+														tmpParam.put("shareKind","GeoVideo");
+														resultIntegerValue += userDao.deleteShare(tmpParam);
+														
+														if("2".equals(moveProISShare)){
+															//share user add
+															param.put("shareIdx", String.valueOf(tmpMv[1]));
+															param.put("shareKind", "GeoVideo");
+															resultIntegerValue += userDao.insertShareFormProject(param);
+														}
 													}
-												}else if("GeoVideo".equals(tmpMv[0])){
-													param.put("moveContent", tmpMv[1]);
-													param.put("nowSeq", String.valueOf(nowSeq));
-													resultIntegerValue = dataDao.updateVideoMove(param);
-													
-													//share user delete
-													tmpParam = new HashMap<String, Object>();
-													tmpParam.put("shareIdx", tmpMv[1]);
-													tmpParam.put("shareKind","GeoVideo");
-													resultIntegerValue += userDao.deleteShare(tmpParam);
-													
-													if("2".equals(moveProISShare)){
-														//share user add
-														param.put("shareIdx", String.valueOf(tmpMv[1]));
-														param.put("shareKind", "GeoVideo");
-														resultIntegerValue += userDao.insertShareFormProject(param);
-													}
+												}else{
+													resultJSON.put("Code", 600);
+													resultJSON.put("Message", Message.code600);
+													return callback + "(" + resultJSON.toString() + ")";
 												}
 											}else{
 												resultJSON.put("Code", 600);
 												resultJSON.put("Message", Message.code600);
 												return callback + "(" + resultJSON.toString() + ")";
 											}
-										}else{
-											resultJSON.put("Code", 600);
-											resultJSON.put("Message", Message.code600);
-											return callback + "(" + resultJSON.toString() + ")";
 										}
-									}
+										
+										txManager.commit(sts);
+					                }catch(Exception e){
+					                	e.printStackTrace();
+					                	txManager.rollback(sts);
+					                	resultJSON.put("Code", 800);
+					        			resultJSON.put("Message", Message.code800);
+					                }
+									
 								}else{
 									resultJSON.put("Code", 700);
 									resultJSON.put("Message", Message.code700);
@@ -3617,18 +4306,33 @@ public class DataAPI  {
 							param.put("uid", String.valueOf(result.get("uid")));
 							resultIntegerValue = userDao.updateTokenTime(param);
 							
-							param.clear();
-							param.put("loginId", loginId);
-							param.put("projectIdx", projectIdx);
-							resultIntegerValue = dataDao.deleteProject(param);
+							DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+			                def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+			                DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+			                TransactionStatus sts = txManager.getTransaction(def);
+			                
+			                try{
+			                	param.clear();
+								param.put("loginId", loginId);
+								param.put("projectIdx", projectIdx);
+								resultIntegerValue = dataDao.deleteProject(param);
+								
+								txManager.commit(sts);
+								
+								if(resultIntegerValue > 0) {
+									resultJSON.put("Code", 100);
+									resultJSON.put("Message", Message.code100);
+								}else{
+									resultJSON.put("Code", 300);
+									resultJSON.put("Message", Message.code300);
+								}
+			                }catch(Exception e){
+			                	e.printStackTrace();
+			                	txManager.rollback(sts);
+			                	resultJSON.put("Code", 800);
+			        			resultJSON.put("Message", Message.code800);
+			                }
 							
-							if(resultIntegerValue > 0) {
-								resultJSON.put("Code", 100);
-								resultJSON.put("Message", Message.code100);
-							}else{
-								resultJSON.put("Code", 300);
-								resultJSON.put("Message", Message.code300);
-							}
 						}else{
 							resultJSON.put("Code", 700);
 							resultJSON.put("Message", Message.code700);
@@ -3650,8 +4354,6 @@ public class DataAPI  {
 		
 		return callback + "(" + resultJSON.toString() + ")";
 	}
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	@RequestMapping(value = "/cms/getContentLog/{token}/{loginId}/{idx}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
 	@ResponseBody
@@ -3718,6 +4420,11 @@ public class DataAPI  {
 		
 		param = new HashMap<String, String>();
 		result = new HashMap<String, String>();
+		isServerUrl = false;
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
+		String saveUserPath = "";
+		File saveUserPathDir = null;
+		List<Object> serverList = new ArrayList<Object>();
 		
 		loginId = loginId.replace("&nbsp", "");
 		
@@ -3753,18 +4460,40 @@ public class DataAPI  {
 			resultList = dataDao.selectContentChildList(param);
 			
 			if(resultList != null && resultList.size() != 0) {
+				objParam = new HashMap<String, Object>();
+				objParam.put("selectYN", "Y");
+				
+				//get server
+				serverList = dataDao.selectServer(objParam);
+				
+				if(serverList != null && serverList.size() > 0){
+					Map<String, String> serverParam = (Map<String, String>)serverList.get(0);
+					if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+							serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+						isServerUrl = true;
+						b_serverUrl = serverParam.get("serverurl");
+						b_serverPort = String.valueOf(serverParam.get("serverport"));
+						b_serverId = serverParam.get("serverid");
+						b_serverPass = serverParam.get("serverpass");
+						b_serverPath = serverParam.get("serverpath");
+					}else{
+						b_serverPath = serverParam.get("serverpath");
+					}
+				}else{
+					b_serverPath = "upload";
+				}
+				saveUserPath = request.getSession().getServletContext().getRealPath("/");
+				saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+						saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+						File.separator + b_serverPath;
+				
+				saveUserPathDir = new File(saveUserPath);
+			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+			    
 				resultJSON.put("Code", 100);
 				resultJSON.put("Message", Message.code100);
 				resultJSON.put("Data", JSONArray.fromObject(resultList));
 				
-				Map<String, Object> tmpMap = (Map<String, Object>)resultList.get(0);
-				if(tmpMap.get("filename") != null){
-					String tmpFileName = tmpMap.get("filename").toString();
-					if(tmpFileName != null && !"".equals(tmpFileName) && !"null".equals(tmpFileName)){
-						tmpFileName = tmpFileName.substring(0,tmpFileName.lastIndexOf("."))+"_modify.gpx";
-						resultJSON.put("GpsData", JSONArray.fromObject(getGeoXmltoJson(tmpFileName)));
-					}
-				}
 			}else {
 				resultJSON.put("Code", 200);
 				resultJSON.put("Message", Message.code200);
@@ -3824,40 +4553,54 @@ public class DataAPI  {
 				return callback + "(" + resultJSON.toString() + ")";
 			}
 			
-			if("GeoCMS".equals(type)){
-				param.put("loginId", loginId);
-				param.put("idx", contentIdx);
-				resultList = dataDao.selectBoardList(param);
-				if(resultList != null && resultList.size() == 1){
-					param.put("tabIdx", tabIdx);
-					resultIntegerValue = dataDao.updateBoard(param);
-				}else{
-					resultJSON.put("Code", 700);
-					resultJSON.put("Message", Message.code600);
-					return callback + "(" + resultJSON.toString() + ")";
-				}
-			}else if("GeoProject".equals(type)){
-				param.put("loginId", loginId);
-				param.put("projectIdx", contentIdx);
-				resultList = dataDao.selectProjectList(param);
-				if(resultList != null && resultList.size() == 1){
-					param.put("tabIdx", tabIdx);
-					param.put("idx", contentIdx);
-					resultIntegerValue = dataDao.updateProject(param);
-				}else{
-					resultJSON.put("Code", 700);
-					resultJSON.put("Message", Message.code600);
-					return callback + "(" + resultJSON.toString() + ")";
-				}
-			}
+			DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+            DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+            TransactionStatus sts = txManager.getTransaction(def);
+            
+            try{
+            	if("GeoCMS".equals(type)){
+    				param.put("loginId", loginId);
+    				param.put("idx", contentIdx);
+    				resultList = dataDao.selectBoardList(param);
+    				if(resultList != null && resultList.size() == 1){
+    					param.put("tabIdx", tabIdx);
+    					resultIntegerValue = dataDao.updateBoard(param);
+    				}else{
+    					resultJSON.put("Code", 700);
+    					resultJSON.put("Message", Message.code600);
+    					return callback + "(" + resultJSON.toString() + ")";
+    				}
+    			}else if("GeoProject".equals(type)){
+    				param.put("loginId", loginId);
+    				param.put("projectIdx", contentIdx);
+    				resultList = dataDao.selectProjectList(param);
+    				if(resultList != null && resultList.size() == 1){
+    					param.put("tabIdx", tabIdx);
+    					param.put("idx", contentIdx);
+    					resultIntegerValue = dataDao.updateProject(param);
+    				}else{
+    					resultJSON.put("Code", 700);
+    					resultJSON.put("Message", Message.code600);
+    					return callback + "(" + resultJSON.toString() + ")";
+    				}
+    			}
+    			
+            	txManager.commit(sts);
+    			if(resultIntegerValue > 0) {
+    				resultJSON.put("Code", 100);
+    				resultJSON.put("Message", Message.code100);
+    			}else {
+    				resultJSON.put("Code", 200);
+    				resultJSON.put("Message", Message.code200);
+    			}
+            }catch(Exception e){
+            	e.printStackTrace();
+            	txManager.rollback(sts);
+            	resultJSON.put("Code", 800);
+    			resultJSON.put("Message", Message.code800);
+            }
 			
-			if(resultIntegerValue > 0) {
-				resultJSON.put("Code", 100);
-				resultJSON.put("Message", Message.code100);
-			}else {
-				resultJSON.put("Code", 200);
-				resultJSON.put("Message", Message.code200);
-			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			resultJSON.put("Code", 800);
@@ -3879,6 +4622,8 @@ public class DataAPI  {
 		param2 = new HashMap<String, String>();
 		result = new HashMap<String, String>();
 		List<Object> resList = new ArrayList<Object>();
+		isServerUrl = false;
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		
 		//token
 		param.clear();
@@ -3922,14 +4667,13 @@ public class DataAPI  {
 				//파일 정보 저장 변수
 				ArrayList<Map<String,String>> fileListP = new ArrayList<Map<String,String>>();
 				List<Map<String,String>> fileListV = new ArrayList<Map<String,String>>();
-				String saveUserPath = request.getSession().getServletContext().getRealPath("/")+ "upload";
-				File saveUserPathDir = new File(saveUserPath);
-			    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+				String saveUserPath = "";
+				File saveUserPathDir = null;
 				ArrayList<FileItem> fileItemListV = new ArrayList<FileItem>();
 				Map<String,String> fileMap = new HashMap<String, String>();
 				int uploadMaxSize = 2*1024*1024*1024; //1024MB = 1GB
-			    File tempDir = new File(saveUserPath+"/"+"tmp");
-				File uploadDir = new File(saveUserPath);
+			    File tempDir = null;
+				File uploadDir = null;
 				List items = null;
 				Iterator iter = null;
 				List<String> saveFileList = new ArrayList<String>();
@@ -3954,34 +4698,69 @@ public class DataAPI  {
 				
 				try {
 					if(isMultipart) {
-						ftp = new FTPClient(); // FTP Client 객체 생성 
-						ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
-						ftp.connect(serverUrlStr, Integer.parseInt(portNumStr)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+						objParam = new HashMap<String, Object>();
+						objParam.put("selectYN", "Y");
 						
-						reply = ftp.getReplyCode();//a
-						if(!FTPReply.isPositiveCompletion(reply)) {
-							ftp.disconnect();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
+						//get server
+						resultList = dataDao.selectServer(objParam);
 						
-						if(!ftp.login(userIdStr, userPassStr)) {
-							ftp.logout();
-							resultJSON.put("Code", 400);
-							resultJSON.put("Message", Message.code400);
-							return callback + "(" + resultJSON.toString() + ")";
-					    }
+						if(resultList != null && resultList.size() > 0){
+							Map<String, String> serverParam = (Map<String, String>)resultList.get(0);
+							if(serverParam != null && serverParam.get("serverurl") != null && !"".equals(serverParam.get("serverurl")) &&
+									serverParam.get("serverport") != null && !"".equals(serverParam.get("serverport"))){
+								isServerUrl = true;
+								b_serverUrl = serverParam.get("serverurl");
+								b_serverPort = String.valueOf(serverParam.get("serverport"));
+								b_serverId = serverParam.get("serverid");
+								b_serverPass = serverParam.get("serverpass");
+								b_serverPath = serverParam.get("serverpath");
+							}else{
+								b_serverPath = serverParam.get("serverpath");
+							}
+						}else{
+							b_serverPath = "upload";
+						}
+						saveUserPath = request.getSession().getServletContext().getRealPath("/");
+						saveUserPath = saveUserPath.substring(0, saveUserPath.lastIndexOf("GeoCMS_Gateway")) + "GeoCMS"+ 
+								saveUserPath.substring(saveUserPath.lastIndexOf("GeoCMS_Gateway")+14) +
+								File.separator + b_serverPath;
 						
-						ftp.setFileType(FTP.BINARY_FILE_TYPE);
-					    ftp.enterLocalPassiveMode();
-			
-					    ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType); // 작업 디렉토리 변경
-					    reply = ftp.getReplyCode();
-					    if (reply == 550) {
-					    	ftp.makeDirectory(saveFilePathStr +"/" +uploadType);
-					    	ftp.changeWorkingDirectory(saveFilePathStr +"/" +uploadType ); // 작업 디렉토리 변경
-					    }
+						saveUserPathDir = new File(saveUserPath);
+					    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
+					    tempDir = new File(saveUserPath+"/"+"tmp");
+						uploadDir = new File(saveUserPath);
+					    
+						if(isServerUrl){
+							ftp = new FTPClient(); // FTP Client 객체 생성 
+							ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+							ftp.setConnectTimeout(3000);
+							ftp.connect(b_serverUrl, Integer.parseInt(b_serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+							
+							reply = ftp.getReplyCode();//a
+							if(!FTPReply.isPositiveCompletion(reply)) {
+								ftp.disconnect();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							if(!ftp.login(b_serverId, b_serverPass)) {
+								ftp.logout();
+								resultJSON.put("Code", 400);
+								resultJSON.put("Message", Message.code400);
+								return callback + "(" + resultJSON.toString() + ")";
+						    }
+							
+							ftp.setFileType(FTP.BINARY_FILE_TYPE);
+						    ftp.enterLocalPassiveMode();
+				
+						    ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType); // 작업 디렉토리 변경
+						    reply = ftp.getReplyCode();
+						    if (reply == 550) {
+						    	ftp.makeDirectory(b_serverPath +"/" +uploadType);
+						    	ftp.changeWorkingDirectory(b_serverPath +"/" +uploadType ); // 작업 디렉토리 변경
+						    }
+						}
 						//--------------------------------------------------------------------------------------------
 						
 						upload.setSizeMax(uploadMaxSize);
@@ -4029,7 +4808,7 @@ public class DataAPI  {
 														changeFileName = tmpHmap.get("thumbnail").toString();
 														if(changeFileName != null && !"".equals(changeFileName)){
 															changeFileName = changeFileName.substring(0, changeFileName.lastIndexOf("_thumb"));
-															changeFileName += "_ogg"  + subFix;
+															changeFileName += "_mp4"  + subFix;
 														}
 													}else if(tmpHmap.get("filename") != null){
 														changeFileName = tmpHmap.get("filename").toString();
@@ -4081,12 +4860,11 @@ public class DataAPI  {
 				}
 				
 				if(fileListP != null && fileListP.size() > 0){
-					imageSaveStart("", "", fileListP, saveFileList, "worldFile");
+					imageSaveStart("", "", fileListP, saveFileList, "worldFile", isServerUrl);
 				}
 				if(fileListV != null && fileListV.size() > 0){
-					videoSaveStart("", "", "", "", fileListV, null, fileItemListV, saveUserPath, "worldFile");
+					videoSaveStart("", "", "", "", fileListV, null, fileItemListV, saveUserPath, "", "worldFile", isServerUrl);
 				}
-				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				
 				if(resultIntegerValue > 0) {
 					resultJSON.put("Code", 100);
@@ -4175,93 +4953,107 @@ public class DataAPI  {
 						
 						projectName = dataReplaceFun(projectName);
 						
-						param.clear();
-						param.put("loginId", loginId);
-						param.put("projectName", projectName);
-						param.put("shareType", shareType);
-						param.put("tabIdx", String.valueOf(tmpResMap.get("tabidx")));
-						resultIntegerValue = dataDao.insertProject(param);
-						if(resultIntegerValue == 1){
-							if(param != null && param.get("idx") != null){
-								saveIdx = String.valueOf(param.get("idx"));
-								
-								if(shareType != null && "2".equals(shareType)){
-									param = new HashMap<String, String>();
-									param.put("projectIdx", parentIdx);
-									param.put("shareIdx", saveIdx);
-									param.put("shareKind", "GeoProject");
-									resultIntegerValue = userDao.insertShareFormProject(param);
-								}
-								//-------------------------------------------------------------------------
-								HashMap<String, Object> copyParam = new HashMap<String, Object>();
-								HashMap<String, Object> objParam = new HashMap<String, Object>();
-								HashMap<String, String> strParam = new HashMap<String, String>();
-								List<Object> copyList = new ArrayList<Object>();
-								String childShareType = "";
-								String childIdx = "";
-								String childDataKind = "";
-								String childIdx2 = "";
-								
-								copyParam.put("copySeqArr", copySeqArr);
-								copyParam.put("copyOrder", "Y");
-								copyList = dataDao.selectAllContentList(copyParam);
-								if(copyList != null && copyList.size() > 0 && copyList.size() == copySeqArr.size()){
-									for(int m = 0; m<copyList.size(); m++){
-										//data save
-										objParam = (HashMap<String, Object>)copyList.get(m);
-										
-										if(objParam != null && objParam.get("idx") != null && objParam.get("datakind") != null){
-											childIdx = String.valueOf(objParam.get("idx"));
-											childShareType = String.valueOf(objParam.get("sharetype"));
-											childDataKind = String.valueOf(objParam.get("datakind"));
+						DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+			            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+			            DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+			            TransactionStatus sts = txManager.getTransaction(def);
+			            
+			            try{
+			            	param.clear();
+							param.put("loginId", loginId);
+							param.put("projectName", projectName);
+							param.put("shareType", shareType);
+							param.put("tabIdx", String.valueOf(tmpResMap.get("tabidx")));
+							resultIntegerValue = dataDao.insertProject(param);
+							if(resultIntegerValue == 1){
+								if(param != null && param.get("idx") != null){
+									saveIdx = String.valueOf(param.get("idx"));
+									
+									if(shareType != null && "2".equals(shareType)){
+										param = new HashMap<String, String>();
+										param.put("projectIdx", parentIdx);
+										param.put("shareIdx", saveIdx);
+										param.put("shareKind", "GeoProject");
+										resultIntegerValue = userDao.insertShareFormProject(param);
+									}
+									//-------------------------------------------------------------------------
+									HashMap<String, Object> copyParam = new HashMap<String, Object>();
+									HashMap<String, Object> objParam = new HashMap<String, Object>();
+									HashMap<String, String> strParam = new HashMap<String, String>();
+									List<Object> copyList = new ArrayList<Object>();
+									String childShareType = "";
+									String childIdx = "";
+									String childDataKind = "";
+									String childIdx2 = "";
+									
+									copyParam.put("copySeqArr", copySeqArr);
+									copyParam.put("copyOrder", "Y");
+									copyList = dataDao.selectAllContentList(copyParam);
+									if(copyList != null && copyList.size() > 0 && copyList.size() == copySeqArr.size()){
+										for(int m = 0; m<copyList.size(); m++){
+											//data save
+											objParam = (HashMap<String, Object>)copyList.get(m);
 											
-											if("GeoPhoto".equals(childDataKind)){
-												objParam.put("projectidx", saveIdx);
-												objParam.put("seqnum", (m+1));
-												objParam.put("loginid", loginId);
-												resultIntegerValue = dataDao.insertImage(objParam);
+											if(objParam != null && objParam.get("idx") != null && objParam.get("datakind") != null){
+												childIdx = String.valueOf(objParam.get("idx"));
+												childShareType = String.valueOf(objParam.get("sharetype"));
+												childDataKind = String.valueOf(objParam.get("datakind"));
 												
-												if(objParam != null && objParam.get("sharetype") != null && objParam.get("idx") != null){
-													if(childShareType != null && "2".equals(childShareType)){
-														param = new HashMap<String, String>();
-														param.put("projectIdx", saveIdx);
-														param.put("shareIdx", String.valueOf(objParam.get("idx")));
-														param.put("shareKind", "GeoPhoto");
-														resultIntegerValue = userDao.insertShareFormProject(param);
-													}
-												}
-											}else{
-												strParam = (HashMap<String, String>)copyList.get(m);
-												strParam.put("projectidx", saveIdx);
-												strParam.put("seqnum", String.valueOf((m+1)));
-												strParam.put("loginid", loginId);
-												
-												resultIntegerValue = dataDao.insertVideo(strParam);
-												if(resultIntegerValue == 1){
-													childIdx2 = String.valueOf(strParam.get("idx"));
-													objParam = new HashMap<String, Object>();
-													objParam.put("newParentIdx", childIdx2);
-													objParam.put("oldParentIdx", childIdx);
-													resultIntegerValue = dataDao.insertChildContentFromParent(objParam);
+												if("GeoPhoto".equals(childDataKind)){
+													objParam.put("projectidx", saveIdx);
+													objParam.put("seqnum", (m+1));
+													objParam.put("loginid", loginId);
+													resultIntegerValue = dataDao.insertImage(objParam);
 													
-													if(strParam != null && strParam.get("sharetype") != null && strParam.get("idx") != null){
+													if(objParam != null && objParam.get("sharetype") != null && objParam.get("idx") != null){
 														if(childShareType != null && "2".equals(childShareType)){
 															param = new HashMap<String, String>();
-															param.put("projectIdx", childIdx);
-															param.put("shareIdx", String.valueOf(strParam.get("idx")));
-															param.put("shareKind", "GeoVideo");
+															param.put("projectIdx", saveIdx);
+															param.put("shareIdx", String.valueOf(objParam.get("idx")));
+															param.put("shareKind", "GeoPhoto");
 															resultIntegerValue = userDao.insertShareFormProject(param);
+														}
+													}
+												}else{
+													strParam = (HashMap<String, String>)copyList.get(m);
+													strParam.put("projectidx", saveIdx);
+													strParam.put("seqnum", String.valueOf((m+1)));
+													strParam.put("loginid", loginId);
+													
+													resultIntegerValue = dataDao.insertVideo(strParam);
+													if(resultIntegerValue == 1){
+														childIdx2 = String.valueOf(strParam.get("idx"));
+														objParam = new HashMap<String, Object>();
+														objParam.put("newParentIdx", childIdx2);
+														objParam.put("oldParentIdx", childIdx);
+														resultIntegerValue = dataDao.insertChildContentFromParent(objParam);
+														
+														if(strParam != null && strParam.get("sharetype") != null && strParam.get("idx") != null){
+															if(childShareType != null && "2".equals(childShareType)){
+																param = new HashMap<String, String>();
+																param.put("projectIdx", childIdx);
+																param.put("shareIdx", String.valueOf(strParam.get("idx")));
+																param.put("shareKind", "GeoVideo");
+																resultIntegerValue = userDao.insertShareFormProject(param);
+															}
 														}
 													}
 												}
 											}
 										}
 									}
+									//-------------------------------------------------------------------------
 								}
-								
-								//-------------------------------------------------------------------------
 							}
-						}
+							
+							txManager.commit(sts);
+			            }catch(Exception e){
+			            	e.printStackTrace();
+			            	txManager.rollback(sts);
+			            	resultJSON.put("Code", 800);
+			    			resultJSON.put("Message", Message.code800);
+			            }
+						
 					}
 				}else{
 					resultJSON.put("Code", 700);
@@ -4277,6 +5069,705 @@ public class DataAPI  {
 					resultJSON.put("Code", 300);
 					resultJSON.put("Message", Message.code300);
 				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/updateGpsData/{token}/{loginId}/{latitude}/{longitude}/{saveContentArr}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String updateGpsData(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("latitude") String latitude
+			, @PathVariable("longitude") String longitude
+			, @PathVariable("saveContentArr") String saveContentArr
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		param = new HashMap<String, String>();
+		result = new HashMap<String, String>();
+		
+		//token
+		param.clear();
+		param.put("token", token);
+		
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(!chkTokenToid){
+					resultJSON.put("Code", 205);
+					resultJSON.put("Message", Message.code205);
+					return callback + "(" + resultJSON.toString() + ")";
+				}
+				
+				//update token time
+				param.put("uid", String.valueOf(result.get("uid")));
+				resultIntegerValue = userDao.updateTokenTime(param);
+				
+				if(latitude != null && !"".equals(latitude) && !"null".equals(latitude) && 
+						longitude != null && !"".equals(longitude) && !"null".equals(longitude) &&
+								saveContentArr != null){
+					
+					String[] saveContentList = saveContentArr.split(",");
+					if(saveContentList != null && saveContentList.length > 0){
+						param = new HashMap<String, String>();
+						param.put("latitude", latitude);
+						param.put("longitude", longitude);
+						
+						boolean resCheck = true;
+						for(int i=0; i<saveContentList.length; i++){
+							if(saveContentList[i] != null){
+								String[] tmpMv = saveContentList[i].split("_");
+								if(tmpMv != null && tmpMv.length == 2 && tmpMv[0] != null && "GeoPhoto".equals(tmpMv[0]) && tmpMv[1] != null && tmpMv[1] != "" && StringUtils.isNumeric(tmpMv[1]) ){
+									HashMap<String, String> param3 = new HashMap<String, String>();
+									param3.put("loginId", loginId);
+									param3.put("idx", tmpMv[1]);
+									param3.put("myContent", "Y");
+									List<Object> resultList3 = dataDao.selectImageList(param3);
+									if(!(resultList3 != null && resultList3.size() > 0)){
+										resCheck = false;
+									}
+								}else{
+									resultJSON.put("Code", 600);
+									resultJSON.put("Message", Message.code600);
+									return callback + "(" + resultJSON.toString() + ")";
+								}
+							}else{
+								resultJSON.put("Code", 600);
+								resultJSON.put("Message", Message.code600);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+						}
+						
+						if(resCheck){
+							DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+				            DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+				            TransactionStatus sts = txManager.getTransaction(def);
+				            
+				            try{
+				            	for(int i=0; i<saveContentList.length; i++){
+									if(saveContentList[i] != null){
+										String[] tmpMv = saveContentList[i].split("_");
+										if(tmpMv[0] != null && "GeoPhoto".equals(tmpMv[0]) && tmpMv[1] != null && tmpMv[1] != "" && StringUtils.isNumeric(tmpMv[1]) ){
+											param.put("idx", tmpMv[1]);
+											param.put("latitude", latitude);
+											param.put("longitude", longitude);
+											resultIntegerValue = dataDao.updateImage(param);
+										}else{
+											resultJSON.put("Code", 600);
+											resultJSON.put("Message", Message.code600);
+											return callback + "(" + resultJSON.toString() + ")";
+										}
+									}else{
+										resultJSON.put("Code", 600);
+										resultJSON.put("Message", Message.code600);
+										return callback + "(" + resultJSON.toString() + ")";
+									}
+								}
+				            	
+				            	txManager.commit(sts);
+				            }catch(Exception e){
+				            	e.printStackTrace();
+				            	txManager.rollback(sts);
+				            	resultJSON.put("Code", 800);
+				    			resultJSON.put("Message", Message.code800);
+				            }
+							
+						}else{
+							resultJSON.put("Code", 700);
+							resultJSON.put("Message", Message.code700);
+							return callback + "(" + resultJSON.toString() + ")";
+						}
+						
+						if(resultIntegerValue > 0) {
+							resultJSON.put("Code", 100);
+							resultJSON.put("Message", Message.code100);
+						}else{
+							resultJSON.put("Code", 300);
+							resultJSON.put("Message", Message.code300);
+						}
+					}else{
+						resultJSON.put("Code", 600);
+						resultJSON.put("Message", Message.code600);
+					}
+					
+				}else{
+					resultJSON.put("Code", 600);
+					resultJSON.put("Message", Message.code600);
+				}
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/selectServerList/{token}/{loginId}/{selectYN}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String updateGpsData(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("selectYN") String selectYN
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject(); 
+		param = new HashMap<String, String>();
+		result = new HashMap<String, String>();
+		HashMap<String, Object> objParam = new HashMap<String, Object>();
+		
+		//token
+		param.clear();
+		param.put("token", token);
+		
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(chkTokenToid){
+					//update token time
+					param.put("uid", String.valueOf(result.get("uid")));
+					resultIntegerValue = userDao.updateTokenTime(param);
+				}
+			}
+			
+			objParam = new HashMap<String, Object>();
+			if(selectYN != null && "Y".equals(selectYN)){
+				objParam.put("selectYN", selectYN);
+			}
+			
+			//get server
+			resultList = dataDao.selectServer(objParam);
+			
+			if(resultList != null && resultList.size()>0) {
+				resultJSON.put("Code", 100);
+				resultJSON.put("Message", Message.code100);
+				resultJSON.put("Data", resultList);
+			}else {
+				resultJSON.put("Code", 200);
+				resultJSON.put("Message", Message.code200);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/saveServer/{token}/{loginId}/{serverName}/{serverUrl}/{serverPort}/{serverId}/{serverPass}/{serverPath}/{serverViewPort}/{selectYN}/{serverDefaultName}/{serverDefaultPath}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String saveServer(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("serverName") String serverName
+			, @PathVariable("serverUrl") String serverUrl
+			, @PathVariable("serverPort") String serverPort
+			, @PathVariable("serverId") String serverId
+			, @PathVariable("serverPass") String serverPass
+			, @PathVariable("serverPath") String serverPath
+			, @PathVariable("serverViewPort") String serverViewPort
+			, @PathVariable("selectYN") String selectYN
+			, @PathVariable("serverDefaultName") String serverDefaultName
+			, @PathVariable("serverDefaultPath") String serverDefaultPath
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		param = new HashMap<String, String>();
+		result = new HashMap<String, String>();
+		resultList = new ArrayList<Object>();
+		resultIntegerValue = 0;
+		HashMap<String,Object> objParam = new HashMap<String, Object>();
+		FTPClient ftp = null; // FTP Client 객체 
+		int reply = 0;
+		int saveIdx = 0;
+		
+		//token
+		param.clear();
+		param.put("token", token);
+		
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(chkTokenToid){
+					if("ADMIN".equals(result.get("type"))){
+						//update token time
+						param.put("uid", String.valueOf(result.get("uid")));
+						resultIntegerValue = userDao.updateTokenTime(param);
+						
+						serverName = serverName.replace("&nbsp", "");
+						serverUrl = serverUrl.replace("&nbsp", "");
+						serverPort = serverPort.replace("&nbsp", "");
+						serverId = serverId.replace("&nbsp", "");
+						serverPass = serverPass.replace("&nbsp", "");
+						serverPath = serverPath.replace("&nbsp", "");
+						serverViewPort = serverViewPort.replace("&nbsp", "");
+						selectYN = selectYN.replace("&nbsp", "");
+						serverDefaultName = serverDefaultName.replace("&nbsp", "");
+						serverDefaultPath = serverDefaultPath.replace("&nbsp", "");
+						
+						serverName = dataReplaceFun(serverName);
+						serverId = dataReplaceFun(serverId);
+						serverPass = dataReplaceFun(serverPass);
+						serverPath = dataReplaceFun(serverPath);
+						serverDefaultName = dataReplaceFun(serverDefaultName);
+						serverDefaultPath = dataReplaceFun(serverDefaultPath);
+						
+						DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                        def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                        DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                        TransactionStatus sts = txManager.getTransaction(def);
+						
+						if(serverName != null && !"".equals(serverName) && serverUrl != null && !"".equals(serverUrl) && 
+								serverPort != null && !"".equals(serverPort) && serverId != null && !"".equals(serverId) && 
+								serverPass != null && !"".equals(serverPass) && serverPath != null && !"".equals(serverPath) &&
+								serverViewPort != null && !"".equals(serverViewPort) && 
+								StringUtils.isNumeric(serverPort) && StringUtils.isNumeric(serverViewPort)){
+							
+							try{
+								ftp = new FTPClient(); // FTP Client 객체 생성 
+								ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+								ftp.setConnectTimeout(3000);
+								ftp.connect(serverUrl, Integer.parseInt(serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+								
+								reply = ftp.getReplyCode();//a
+								if(!FTPReply.isPositiveCompletion(reply)) {
+									ftp.disconnect();
+									txManager.rollback(sts);
+									resultJSON.put("Code", 400);
+									resultJSON.put("Message", Message.code400);
+									return callback + "(" + resultJSON.toString() + ")";
+								 }
+								
+								if(!ftp.login(serverId, serverPass)) {
+									ftp.logout();
+									txManager.rollback(sts);
+									resultJSON.put("Code", 400);
+									resultJSON.put("Message", Message.code400);
+									return callback + "(" + resultJSON.toString() + ")";
+								 }
+							}catch(Exception e){
+								e.printStackTrace();
+								txManager.rollback(sts);
+								resultJSON.put("Code", 206);
+								resultJSON.put("Message", Message.code206);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+							
+							objParam = new HashMap<String, Object>();
+							objParam.put("serverUrl", serverUrl);
+							objParam.put("serverPort", serverPort);
+							objParam.put("serverId", serverId);
+							objParam.put("serverPass", serverPass);
+							
+							resultList = dataDao.selectServer(objParam);
+							
+							if(resultList != null && resultList.size() > 0){
+								txManager.rollback(sts);
+								resultJSON.put("Code", 108);
+								resultJSON.put("Message", Message.code108);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+							
+							try{
+								if(selectYN != null && "Y".equals(selectYN)){
+    								param = new HashMap<String, String>();
+    							    param.put("selectYN", "N");
+    							    param.put("isAll", "Y");
+    							    resultIntegerValue = dataDao.updateServer(param);
+    						    }
+								
+								param = new HashMap<String, String>();
+								param.put("serverName", serverName);
+								param.put("serverUrl", serverUrl);
+								param.put("serverPort", serverPort);
+								param.put("serverId", serverId);
+								param.put("serverPass", serverPass);
+								param.put("serverPath", serverPath);
+								param.put("serverViewPort", serverViewPort);
+								if(selectYN != null && "Y".equals(selectYN)){
+									param.put("selectYN", selectYN);
+								}
+								
+								resultIntegerValue = dataDao.insertServer(param);
+								if(param != null && param.get("idx") != null && !"".equals(param.get("idx"))){
+								 saveIdx = Integer.valueOf(param.get("idx").toString());
+								}
+								
+							}catch(Exception e){
+								e.printStackTrace();
+								txManager.rollback(sts);
+								resultJSON.put("Code", 800);
+								resultJSON.put("Message", Message.code800);
+							}
+						}
+						
+						try{
+							if(serverDefaultName != null && !"".equals(serverDefaultName) && serverDefaultPath != null && !"".equals(serverDefaultPath)){
+								param = new HashMap<String, String>();
+								param.put("serverName", serverDefaultName);
+							    param.put("serverPath", serverDefaultPath);
+							    if(!"Y".equals(selectYN)){
+							    	param.put("selectYN", "Y");
+							    }
+							    resultIntegerValue = dataDao.insertServer(param);
+							}
+							
+							if(resultIntegerValue > 0){
+						    	resultJSON.put("Code", 100);
+								resultJSON.put("Message", Message.code100);
+						    }else{
+						    	resultJSON.put("Code", 300);
+								resultJSON.put("Message", Message.code300);
+						    }
+						}catch(Exception e){
+							e.printStackTrace();
+							txManager.rollback(sts);
+							resultJSON.put("Code", 800);
+							resultJSON.put("Message", Message.code800);
+						}
+					    txManager.commit(sts);
+						
+					}else{
+						resultJSON.put("Code", 500);
+						resultJSON.put("Message", Message.code500);
+					}
+				}else{
+					resultJSON.put("Code", 205);
+					resultJSON.put("Message", Message.code205);
+					return callback + "(" + resultJSON.toString() + ")";
+				}
+				
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/updateServer/{token}/{loginId}/{serverName}/{serverUrl}/{serverPort}/{serverId}/{serverPass}/{serverPath}/{serverViewPort}/{selectYN}/{idx}/{serverDefault}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String upadteServer(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("serverName") String serverName
+			, @PathVariable("serverUrl") String serverUrl
+			, @PathVariable("serverPort") String serverPort
+			, @PathVariable("serverId") String serverId
+			, @PathVariable("serverPass") String serverPass
+			, @PathVariable("serverPath") String serverPath
+			, @PathVariable("serverViewPort") String serverViewPort
+			, @PathVariable("selectYN") String selectYN
+			, @PathVariable("idx") String idx
+			, @PathVariable("serverDefault") String serverDefault
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		param = new HashMap<String, String>();
+		result = new HashMap<String, String>();
+		resultList = new ArrayList<Object>();
+		resultIntegerValue = 0;
+		HashMap<String,Object> objParam = new HashMap<String, Object>();
+		FTPClient ftp = null; // FTP Client 객체 
+		FileInputStream fis = null; // File Input Stream 
+		int reply = 0;
+		
+		//token
+		param.clear();
+		param.put("token", token);
+		
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(chkTokenToid){
+					if("ADMIN".equals(result.get("type"))){
+						//update token time
+						param.put("uid", String.valueOf(result.get("uid")));
+						resultIntegerValue = userDao.updateTokenTime(param);
+						
+						serverName = serverName.replace("&nbsp", "");
+						serverUrl = serverUrl.replace("&nbsp", "");
+						serverPort = serverPort.replace("&nbsp", "");
+						serverId = serverId.replace("&nbsp", "");
+						serverPass = serverPass.replace("&nbsp", "");
+						serverPath = serverPath.replace("&nbsp", "");
+						serverViewPort = serverViewPort.replace("&nbsp", "");
+						selectYN = selectYN.replace("&nbsp", "");
+						serverDefault = serverDefault.replace("&nbsp", "");
+						
+						if(serverName != null && !"".equals(serverName) && serverUrl != null && !"".equals(serverUrl) && 
+								serverPort != null && !"".equals(serverPort) && StringUtils.isNumeric(serverPort) && serverId != null && !"".equals(serverId) && 
+								serverPass != null && !"".equals(serverPass) && serverPath != null && !"".equals(serverPath) &&
+								idx != null && !"".equals(idx) && StringUtils.isNumeric(idx) &&
+								serverViewPort != null && !"".equals(serverViewPort) && StringUtils.isNumeric(serverViewPort)){
+							
+							serverName = dataReplaceFun(serverName);
+							serverId = dataReplaceFun(serverId);
+							serverPass = dataReplaceFun(serverPass);
+							serverPath = dataReplaceFun(serverPath);
+							
+							objParam = new HashMap<String, Object>();
+							objParam.put("serverUrl", serverUrl);
+							objParam.put("serverPort", serverPort);
+							objParam.put("serverId", serverId);
+							objParam.put("serverPass", serverPass);
+							objParam.put("saveIdxArr", Arrays.asList(idx));
+							
+							resultList = dataDao.selectServer(objParam);
+							
+							if(resultList != null && resultList.size() > 0){
+								resultJSON.put("Code", 108);
+								resultJSON.put("Message", Message.code108);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+							
+							try{
+								ftp = new FTPClient(); // FTP Client 객체 생성 
+								ftp.setControlEncoding("UTF-8"); // 문자 코드를 UTF-8로 인코딩 
+								ftp.setConnectTimeout(3000);
+								ftp.connect(serverUrl, Integer.parseInt(serverPort)); // 서버접속 " "안에 서버 주소 입력 또는 "서버주소", 포트번호 
+								
+								reply = ftp.getReplyCode();//a
+								if(!FTPReply.isPositiveCompletion(reply)) {
+									ftp.disconnect();
+									resultJSON.put("Code", 400);
+									resultJSON.put("Message", Message.code400);
+									return callback + "(" + resultJSON.toString() + ")";
+							    }
+								
+								if(!ftp.login(serverId, serverPass)) {
+									ftp.logout();
+									resultJSON.put("Code", 400);
+									resultJSON.put("Message", Message.code400);
+									return callback + "(" + resultJSON.toString() + ")";
+							    }
+							}catch(Exception e){
+								e.printStackTrace();
+								resultJSON.put("Code", 206);
+								resultJSON.put("Message", Message.code206);
+								return callback + "(" + resultJSON.toString() + ")";
+							}
+							
+							DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                            DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                            TransactionStatus sts = txManager.getTransaction(def);
+                            
+							try{
+								if(selectYN != null && "Y".equals(selectYN)){
+									param = new HashMap<String, String>();
+								    param.put("selectYN", "N");
+								    param.put("isAll", "Y");
+								    resultIntegerValue = dataDao.updateServer(param);
+							    }
+					
+							    param = new HashMap<String, String>();
+							    param.put("serverName", serverName);
+							    param.put("serverUrl", serverUrl);
+							    param.put("serverPort", serverPort);
+							    param.put("serverId", serverId);
+							    param.put("serverPass", serverPass);
+							    param.put("serverPath", serverPath);
+							    param.put("serverViewPort", serverViewPort);
+							    param.put("idx", idx);
+							    if(selectYN != null && "Y".equals(selectYN)){
+							    	param.put("selectYN", selectYN);
+							    }
+							    
+							    resultIntegerValue = dataDao.updateServer(param);
+							    txManager.commit(sts);
+							    
+							    if(resultIntegerValue > 0){
+							    	resultJSON.put("Code", 100);
+									resultJSON.put("Message", Message.code100);
+							    }else{
+							    	resultJSON.put("Code", 300);
+									resultJSON.put("Message", Message.code300);
+							    }
+							    
+							}catch(Exception e){
+								e.printStackTrace();
+								txManager.rollback(sts);
+								resultJSON.put("Code", 800);
+								resultJSON.put("Message", Message.code800);
+							}
+						}else if("Y".equals(serverDefault)){
+							serverName = dataReplaceFun(serverName);
+							serverPath = dataReplaceFun(serverPath);
+							
+							if(selectYN != null && "Y".equals(selectYN)){
+								param = new HashMap<String, String>();
+							    param.put("selectYN", "N");
+							    param.put("isAll", "Y");
+							    resultIntegerValue = dataDao.updateServer(param);
+						    }
+						    
+							param = new HashMap<String, String>();
+						    param.put("serverName", serverName);
+						    param.put("serverPath", serverPath);
+						    param.put("idx", idx);
+						    if(selectYN != null && "Y".equals(selectYN)){
+						    	param.put("selectYN", selectYN);
+						    }
+						    
+						    resultIntegerValue = dataDao.updateServer(param);
+						    if(resultIntegerValue > 0){
+						    	resultJSON.put("Code", 100);
+								resultJSON.put("Message", Message.code100);
+						    }else{
+						    	resultJSON.put("Code", 300);
+								resultJSON.put("Message", Message.code300);
+						    }
+							
+						}else{
+							resultJSON.put("Code", 600);
+							resultJSON.put("Message", Message.code600);
+						}
+						
+					}else{
+						resultJSON.put("Code", 500);
+						resultJSON.put("Message", Message.code500);
+					}
+				}else{
+					resultJSON.put("Code", 205);
+					resultJSON.put("Message", Message.code205);
+					return callback + "(" + resultJSON.toString() + ")";
+				}
+				
+			}else{
+				resultJSON.put("Code", 203);
+				resultJSON.put("Message", Message.code203);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultJSON.put("Code", 800);
+			resultJSON.put("Message", Message.code800);
+		}
+		
+		return callback + "(" + resultJSON.toString() + ")";
+	}
+	
+	@RequestMapping(value = "/cms/deleteServer/{token}/{loginId}/{idxArr}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String deleteServer(@RequestParam("callback") String callback
+			, @PathVariable("token") String token
+			, @PathVariable("loginId") String loginId
+			, @PathVariable("idxArr") String idxArr
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		param = new HashMap<String, String>();
+		result = new HashMap<String, String>();
+		resultList = new ArrayList<Object>();
+		resultIntegerValue = 0;
+		HashMap<String,Object> objParam = new HashMap<String, Object>();
+		
+		//token
+		param.clear();
+		param.put("token", token);
+		
+		try {
+			result = userDao.selectUid(param);
+			
+			if(result != null){
+				boolean chkTokenToid = tokenToLoginId(token, loginId);
+				if(chkTokenToid){
+					if("ADMIN".equals(result.get("type"))){
+						//update token time
+						param.put("uid", String.valueOf(result.get("uid")));
+						resultIntegerValue = userDao.updateTokenTime(param);
+						
+						if(idxArr != null && !"".equals(idxArr) && checkListIsNumber(idxArr)){
+							DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                            DataSourceTransactionManager txManager = new DataSourceTransactionManager(dataSource);
+                            TransactionStatus sts = txManager.getTransaction(def);
+                            
+                            String[] idxList = idxArr.split(",");
+							try{
+								objParam = new HashMap<String, Object>();
+								objParam.put("idx", idxList);
+								resultList = dataDao.selectServer(objParam);
+								if(resultList != null && resultList.size() > 0){
+									
+									param = new HashMap<String, String>();
+									param = (HashMap<String, String>)resultList.get(0);
+									if(param != null){
+										objParam = new HashMap<String, Object>();
+										objParam.put("removeList", idxList);
+									    resultIntegerValue = dataDao.deleteServer(objParam);
+									    
+									    if(param.get("selectyn") != null && "Y".equals(param.get("selectyn"))){
+									    	objParam = new HashMap<String, Object>();
+											resultList = dataDao.selectServer(objParam);
+											if(resultList != null && resultList.size() > 0){
+												param = new HashMap<String, String>();
+												param = (HashMap<String, String>)resultList.get(0);
+												if(param != null){
+													param.put("selectYN", "Y");
+													dataDao.updateServer(param);
+												}
+											}
+									    }
+									    
+									    if(resultIntegerValue > 0){
+									    	resultJSON.put("Code", 100);
+											resultJSON.put("Message", Message.code100);
+									    }else{
+									    	resultJSON.put("Code", 300);
+											resultJSON.put("Message", Message.code300);
+									    }
+									    
+									}
+								}
+								
+								txManager.commit(sts);
+							    
+							}catch(Exception e){
+								e.printStackTrace();
+								txManager.rollback(sts);
+								resultJSON.put("Code", 800);
+								resultJSON.put("Message", Message.code800);
+							}
+						}else{
+							resultJSON.put("Code", 600);
+							resultJSON.put("Message", Message.code600);
+						}
+						
+					}else{
+						resultJSON.put("Code", 500);
+						resultJSON.put("Message", Message.code500);
+					}
+				}else{
+					resultJSON.put("Code", 205);
+					resultJSON.put("Message", Message.code205);
+					return callback + "(" + resultJSON.toString() + ")";
+				}
+				
 			}else{
 				resultJSON.put("Code", 203);
 				resultJSON.put("Message", Message.code203);
@@ -4320,8 +5811,7 @@ public class DataAPI  {
 			contentNum != null && !"".equals(contentNum) && !"null".equals(contentNum) &&
 			contentTabIdx != null && !"".equals(contentTabIdx) && !"null".equals(contentTabIdx)){
 			
-			if(!(contentTab != null && "&nbsp".equals(contentTab) && contentTabType != null && "&nbsp".equals(contentTabType) && 
-					contentNum != null && "&nbsp".equals(contentNum) && contentTabIdx != null && "&nbsp".equals(contentTabIdx))){
+			if(!("&nbsp".equals(contentTab) && "&nbsp".equals(contentTabType) && "&nbsp".equals(contentNum) && "&nbsp".equals(contentTabIdx))){
 				if(!checkContentTypeC(contentTab, contentTabType, contentNum , contentTabIdx) || !checkListIsNumber(contentNum)){
 					chk = false;
 				}
@@ -4334,8 +5824,7 @@ public class DataAPI  {
 			boardNum != null && !"".equals(boardNum) && !"null".equals(boardNum) &&
 			boardTabIdx != null && !"".equals(boardTabIdx) && !"null".equals(boardTabIdx)){
 			
-			if(!(boardTab != null && "&nbsp".equals(boardTab) && boardNum != null && "&nbsp".equals(boardNum) && 
-					boardTabIdx != null && "&nbsp".equals(boardTabIdx))){
+			if(!("&nbsp".equals(boardTab) && "&nbsp".equals(boardNum) && "&nbsp".equals(boardTabIdx))){
 				if(!checkContentTypeB(boardTab, boardNum, boardTabIdx) ||  !checkListIsNumber(boardNum)){
 					chk = false;
 				}
@@ -4485,75 +5974,18 @@ public class DataAPI  {
         }
     }
 	
-	public void imageSaveStart(String loginId, String logKey, List<Map<String,String>> fileList, List<String> saveFiles, String fileType){
-		SaveController saveController = new SaveController(loginId, logKey, fileList, saveFiles, serverUrlStr, userIdStr, userPassStr, portNumStr, saveFilePathStr, fileType);
+	public void imageSaveStart(String loginId, String logKey, List<Map<String,String>> fileList, List<String> saveFiles, String fileType, boolean isServerUrl){
+		SaveController saveController = new SaveController(loginId, logKey, fileList, saveFiles, b_serverUrl, b_serverId, b_serverPass, b_serverPort, b_serverPath, fileType, isServerUrl);
 		saveController.setDataAPI(dataDao);
 		saveController.start();
 	}
 	
 	public void videoSaveStart(String loginId, String logKey, String saveFileNameOrg, String parentIndex,
-			List<Map<String,String>> files, List<String> filesXml, ArrayList<FileItem> fileItemList, String saveUserPath, String fileType){
-		VideoSaveController videoSaveController = new VideoSaveController(loginId, logKey, saveFileNameOrg, parentIndex, files, filesXml, fileItemList, saveUserPath, serverUrlStr, userIdStr, userPassStr, portNumStr, saveFilePathStr, fileType);
+			List<Map<String,String>> files, List<String> filesXml, ArrayList<FileItem> fileItemList, String saveUserPath, String gpsFileTypeData, String fileType, boolean isServerUrl){
+		VideoSaveController videoSaveController = new VideoSaveController(loginId, logKey, saveFileNameOrg, parentIndex, files, filesXml, fileItemList, saveUserPath,
+				b_serverUrl, b_serverId, b_serverPass, b_serverPort, b_serverPath, gpsFileTypeData, fileType, isServerUrl);
 		videoSaveController.setDataAPI(dataDao);
 		videoSaveController.start();
-	}
-	
-	public List<Map<String,Object>> getGeoXmltoJson(String file_name) throws IOException {
-		
-		System.out.println(file_name);
-		
-		String result = "";
-		List<Map<String,Object>> resList = new ArrayList<Map<String,Object>>();
-		Map<String,Object> resMap = new HashMap<String, Object>();
-		
-		file_name = "http://"+ serverUrlStr + "/shares/"+saveFilePathStr +"/GeoVideo/"+file_name;
-		
-		try {			   
-			URL gamelan = new URL(file_name);
-			Authenticator.setDefault(new Authenticator()
-			{
-			  @Override
-			  protected PasswordAuthentication getPasswordAuthentication()
-			  {
-			    return new PasswordAuthentication(userIdStr, userPassStr.toCharArray());
-			  }
-			});
-			HttpURLConnection urlConnection = (HttpURLConnection)gamelan.openConnection();
-            urlConnection.connect();
-          
-            if(urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK){
-            	BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), "UTF-8"));
-
-                String inputLine;
-                while ((inputLine = in.readLine()) != null){
-                	System.out.println(inputLine);
-                	result += inputLine;
-                }
-                in.close();
-            }
-            
-            if(result != null && !"".equals(result)){
-            	org.json.JSONObject xmlJSONObj = XML.toJSONObject(result);//"gpx":{"trk":{"trkseg":{"trkpt":[
-                org.json.JSONObject gpxData = (org.json.JSONObject)xmlJSONObj.get("gpx");
-                org.json.JSONObject trkData = (org.json.JSONObject)gpxData.get("trk");
-                org.json.JSONObject trksegData = (org.json.JSONObject)trkData.get("trkseg");
-                org.json.JSONArray jsonArr = (org.json.JSONArray)trksegData.get("trkpt");
-                if(jsonArr != null && jsonArr.length() > 0){
-                	for(int i=0; i<jsonArr.length();i++){
-                		resMap = new HashMap<String, Object>();
-                		xmlJSONObj = (org.json.JSONObject)jsonArr.get(i);
-                		resMap.put("lon", xmlJSONObj.get("lon"));
-                		resMap.put("lat", xmlJSONObj.get("lat"));
-                		resList.add(resMap);
-                	}
-                }
-            }
-            
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		return resList;
 	}
 	
 	public String dataReplaceFun(String oneData) {
