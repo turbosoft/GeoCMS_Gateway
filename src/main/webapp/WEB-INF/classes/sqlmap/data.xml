@@ -1773,9 +1773,7 @@
     		WHERE
     			1 = 1
     		AND
-    			PARENTIDX = ${parentIdx}
-    		AND
-    			CONTENTKIND = '${contentKind}'
+    			PARENTIDX = ${parentIdx}    		
     </delete>
     
     <select id="selectImageFileList" parameterType="paramMap" resultType="resultMap">
