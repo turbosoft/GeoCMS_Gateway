@@ -28,10 +28,18 @@ public class VideoEncoding {
 		if(osffmpeg != null && !"".equals(osffmpeg)){
 			if("win".equals(osffmpeg))
 			{
+			
 				String[] message = new String[] {
 						ffmpegSetting.getFfmpeg_dir_and_file_name(),
 						"-i",
 						file_name,
+						"-acodec",
+						"aac",
+						"-ab",
+						"192k",
+						"-ar",
+						"48000",
+						"-ac","2","-b:a","300k","-vcodec","libx264","-level","30","-b:v","3000k","-r","29.97","-s","1280:720","-threads","0","-strict","-2",
 						ffmpegSetting.getSrc_no_ext(file_name)+"_mp4.mp4"
 				};
 				
@@ -44,12 +52,8 @@ public class VideoEncoding {
 			}
 			else if("linux".equals(osffmpeg))
 			{
-				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
-				System.out.println("convertToOgg : " + file_name);
-				System.out.println("convertToOgg dirPath : " + dirPath);
 				
 				String[] message = new String[] {
-//						dirPath,
 						"ffmpeg",
 						"-i",
 						file_name,
@@ -57,7 +61,7 @@ public class VideoEncoding {
 				};
 				
 				FFmpeg ffmpeg = new FFmpeg();
-				String value = ffmpeg.runFFmpeg_linux(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
+				String value = ffmpeg.runFFmpeg_linux(file_name, message, "encoding");
 				System.out.println("종료 정보 : "+ value);
 				if(value != null && "complete".equals(value)){
 					resInt = 1;
@@ -86,10 +90,13 @@ public class VideoEncoding {
 			osffmpeg = "sunos";
 		}
 		
+		System.out.println("convertToGpx osffmpeg : " + osffmpeg);
 		if(osffmpeg != null && !"".equals(osffmpeg)){
-			file_name = file_name.replaceAll("/","\\");
+			System.out.println("convertToGpx file_name : " + file_name);
 			if("win".equals(osffmpeg))
 			{
+				System.out.println("convertToGpx win");
+				file_name = file_name.replaceAll("/","\\");
 				String[] message = new String[] {
 						ffmpegSetting.getExiftool_file_name(),
 						"-ee",
@@ -103,24 +110,20 @@ public class VideoEncoding {
 			}
 			else if("linux".equals(osffmpeg))
 			{
-//				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
-//				System.out.println("convertToOgg : " + file_name);
-//				System.out.println("convertToOgg dirPath : " + dirPath);
-//				
-//				String[] message = new String[] {
-//						"ffmpeg",
-//						"-i",
-//						file_name,
-//						ffmpegSetting.getSrc_no_ext(file_name)+"_ogg.ogg"
-//				};
-//				
-//				FFmpeg ffmpeg = new FFmpeg();
-//				String value = ffmpeg.runFFmpeg_linux(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
-//				System.out.println("종료 정보 : "+ value);
-//				if(value != null && "complete".equals(value)){
-//					resInt = 1;
-//				}
-//				System.out.println("종료 정보  resInt : "+resInt);
+				System.out.println("convertToGpx linux");
+
+				file_name = file_name.replaceAll("\\+", "\\");			
+
+				
+				String[] message = new String[] {
+						"exiftool",
+						"-ee",
+						file_name
+				};
+				
+				FFmpeg ffmpeg = new FFmpeg();
+				resGpsDataArr = ffmpeg.runExiftool_linux(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
+				System.out.println("종료 정보 : "+ resGpsDataArr);
 			}
 		}
 		
