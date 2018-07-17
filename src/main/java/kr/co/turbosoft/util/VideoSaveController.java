@@ -241,6 +241,7 @@ public class VideoSaveController extends Thread{
 						if(isServerUrl){
 							jsonObj.put("filePath", b_serverUrl + File.separator + b_serverPath + File.separator + "GeoVideo");
 						}else{
+							System.out.println("saveUserPath : "+ saveUserPath);
 							jsonObj.put("filePath", saveUserPath + File.separator + "GeoVideo");
 						}
 						
@@ -853,9 +854,9 @@ public class VideoSaveController extends Thread{
 										"2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,//"
 								};
 								
-//								ffmpegNowFilePath = tmpGpxFilePathDirFull.substring(0,tmpGpxFilePathDirFull.lastIndexOf("\\"));
 								ffmpegNowFilePath = tmpGpxFilePathDirFull.substring(0,tmpGpxFilePathDirFull.lastIndexOf(File.separator));
-								ffmpegVal = ffmpeg.runFFmpeg_linux(tmpGpxFilePathDirFull, ffmpegNowFilePath, message, "getTime");
+//								ffmpegVal = ffmpeg.runFFmpeg_linux(tmpGpxFilePathDirFull, ffmpegNowFilePath, message, "getTime");
+								ffmpegVal = ffmpeg.runFFmpeg_linux(tmpGpxFilePathDirFull, message, "getTime");
 							}
 						}
 						System.out.println("ffmpegNowFilePath : " + ffmpegNowFilePath + " ffmpegVal : " + ffmpegVal);
