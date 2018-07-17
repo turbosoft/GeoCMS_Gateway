@@ -1077,8 +1077,12 @@
         	,ORIGINNAME
         	,FILENAME
         	,THUMBNAIL
+        	<if test="longitude != null and !longitude.equalsIgnoreCase('') and !longitude.equalsIgnoreCase('0')">
         	,LONGITUDE
+        	</if>
+        	<if test="latitude != null and !latitude.equalsIgnoreCase('') and !latitude.equalsIgnoreCase('0')">
         	,LATITUDE
+        	</if>
         	,RDATE
         	,UDATE
         	,SHARETYPE
@@ -1094,8 +1098,12 @@
         	,'${originname}'
         	,'${filename}'
         	,'${thumbnail}'
+        	<if test="longitude != null and !longitude.equalsIgnoreCase('') and !longitude.equalsIgnoreCase('0')">
         	, ${longitude}
+        	</if>
+        	<if test="latitude != null and !latitude.equalsIgnoreCase('') and !latitude.equalsIgnoreCase('0')">
         	, ${latitude}
+        	</if>
         	, NOW()
         	, NOW()
         	, ${sharetype}
@@ -1773,7 +1781,7 @@
     		WHERE
     			1 = 1
     		AND
-    			PARENTIDX = ${parentIdx}    		
+    			PARENTIDX = ${parentIdx}
     </delete>
     
     <select id="selectImageFileList" parameterType="paramMap" resultType="resultMap">
