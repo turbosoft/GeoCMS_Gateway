@@ -13,6 +13,9 @@ import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.security.GeneralSecurityException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +25,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
@@ -65,6 +71,7 @@ import com.oreilly.servlet.multipart.Part;
 import kr.co.turbosoft.dao.DataDao;
 import kr.co.turbosoft.dao.UserDao;
 import kr.co.turbosoft.util.ContentsSave;
+import kr.co.turbosoft.util.KeyManager;
 import kr.co.turbosoft.util.SaveController;
 import kr.co.turbosoft.util.VideoSaveController;
 
@@ -2170,7 +2177,7 @@ public class DataAPI  {
 				    if(!tempDir.exists()) tempDir.mkdir();
 					if(!uploadDir.exists()) uploadDir.mkdir();
 					
-					upload.setSizeMax(uploadMaxSize);
+					upload.setSizeMax(uploadMaxSize);//1073741824
 					
 					String viewTimeArr = "";
 					
@@ -2218,6 +2225,9 @@ public class DataAPI  {
 			            }// end while 
 					} catch (Exception e1) {
 						e1.printStackTrace();
+						resultJSON.put("Code", 400);
+						resultJSON.put("Message", Message.code400);
+						return callback + "(" + resultJSON.toString() + ")";
 					}
 					//////////////////////////////////////////////////////////
 					
@@ -5352,7 +5362,7 @@ public class DataAPI  {
 								if(!FTPReply.isPositiveCompletion(reply)) {
 									ftp.disconnect();
 									txManager.rollback(sts);
-									resultJSON.put("Code", 400);
+									resultJSON.put("Code", 206);
 									resultJSON.put("Message", Message.code400);
 									return callback + "(" + resultJSON.toString() + ")";
 								 }
@@ -5360,7 +5370,7 @@ public class DataAPI  {
 								if(!ftp.login(serverId, serverPass)) {
 									ftp.logout();
 									txManager.rollback(sts);
-									resultJSON.put("Code", 400);
+									resultJSON.put("Code", 206);
 									resultJSON.put("Message", Message.code400);
 									return callback + "(" + resultJSON.toString() + ")";
 								 }
@@ -5435,7 +5445,7 @@ public class DataAPI  {
 						    	resultJSON.put("Code", 100);
 								resultJSON.put("Message", Message.code100);
 						    }else{
-						    	resultJSON.put("Code", 300);
+						    	resultJSON.put("Code", 200);
 								resultJSON.put("Message", Message.code300);
 						    }
 						}catch(Exception e){
@@ -5555,14 +5565,14 @@ public class DataAPI  {
 								reply = ftp.getReplyCode();//a
 								if(!FTPReply.isPositiveCompletion(reply)) {
 									ftp.disconnect();
-									resultJSON.put("Code", 400);
+									resultJSON.put("Code", 206);
 									resultJSON.put("Message", Message.code400);
 									return callback + "(" + resultJSON.toString() + ")";
 							    }
 								
 								if(!ftp.login(serverId, serverPass)) {
 									ftp.logout();
-									resultJSON.put("Code", 400);
+									resultJSON.put("Code", 206);
 									resultJSON.put("Message", Message.code400);
 									return callback + "(" + resultJSON.toString() + ")";
 							    }
@@ -5710,7 +5720,7 @@ public class DataAPI  {
                             String[] idxList = idxArr.split(",");
 							try{
 								objParam = new HashMap<String, Object>();
-								objParam.put("idx", idxList);
+								objParam.put("removeIdx", idxList);
 								resultList = dataDao.selectServer(objParam);
 								if(resultList != null && resultList.size() > 0){
 									
@@ -6008,5 +6018,38 @@ public class DataAPI  {
 		}
 		
 		return replaceResultData;
+	}
+	
+	@RequestMapping(value = "/cms/encrypt/{text}/{type}", method = RequestMethod.GET, produces="application/json;charset=UTF-8")
+	@ResponseBody
+	public String encrypt(@RequestParam("callback") String callback
+			, @PathVariable("text") String text
+			, @PathVariable("type") String type
+			, Model model, HttpServletRequest request) {
+		JSONObject resultJSON = new JSONObject();
+		KeyManager km = new KeyManager();
+		String returnStr = "";
+		
+		text = text.replaceAll("&sbsp", "/");
+		if(type != null){
+			
+			if("encrypt".equals(type)){
+				try {
+					returnStr = km.encrypt(text);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+			}else{
+				try {
+					returnStr = km.decrypt(text);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+			}
+		}
+		resultJSON.put("returnStr", returnStr);
+		return callback + "(" + resultJSON.toString() + ")";
 	}
 }
