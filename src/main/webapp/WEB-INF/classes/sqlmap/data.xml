@@ -1896,6 +1896,12 @@
        			${saveIdxArr}
        		</foreach>
        	</if>
+       	<if test="removeIdx != null">
+       		<foreach collection="removeIdx" item="removeIdx" open= " AND IDX IN (" separator =","  close=")" >
+       			${removeIdx}
+       		</foreach>
+       	</if>
+       	
        	<if test="idx != null and idx != ''">
        		AND IDX = ${idx}
        	</if>
@@ -1922,8 +1928,8 @@
        	</if>
 		ORDER BY
 			COALESCE(SELECTYN,'N') DESC, UDATE DESC
-    </select>
-    
+    </select> 
+        
     <insert id="insertServer" parameterType="paramMap">
         INSERT INTO GEOCMS_SERVER
         (
