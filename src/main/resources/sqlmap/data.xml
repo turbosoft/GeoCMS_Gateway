@@ -689,6 +689,7 @@
 				,STATUS
 				,DRONETYPE
 				,PROJECTIDX
+				,(SELECT id FROM GEOCMS_PROJECT_CONTENT WHERE GEOCMS_PROJECT_CONTENT.idx = GEOCMS_IMAGE_CONTENT.projectIdx) AS PROJECTUSERID
 			FROM 
 				GEOCMS_IMAGE_CONTENT
 		)T_TABLE
@@ -953,6 +954,7 @@
 				,SHARETYPE
 				,(SELECT STATUS FROM GEOCMS_LOG WHERE contentType = 'GeoVideo' AND contentIdx = CAST(GEOCMS_VIDEO_CONTENT.IDX as text)) STATUS
 				,DRONETYPE
+				,(SELECT id FROM GEOCMS_PROJECT_CONTENT WHERE GEOCMS_PROJECT_CONTENT.idx = GEOCMS_VIDEO_CONTENT.projectIdx) AS PROJECTUSERID
 			FROM 
 				GEOCMS_VIDEO_CONTENT
 		) T_TABLE
@@ -1077,8 +1079,12 @@
         	,ORIGINNAME
         	,FILENAME
         	,THUMBNAIL
+        	<if test="longitude != null and !longitude.equalsIgnoreCase('') and !longitude.equalsIgnoreCase('0')">
         	,LONGITUDE
+        	</if>
+        	<if test="latitude != null and !latitude.equalsIgnoreCase('') and !latitude.equalsIgnoreCase('0')">
         	,LATITUDE
+        	</if>
         	,RDATE
         	,UDATE
         	,SHARETYPE
@@ -1094,8 +1100,12 @@
         	,'${originname}'
         	,'${filename}'
         	,'${thumbnail}'
+        	<if test="longitude != null and !longitude.equalsIgnoreCase('') and !longitude.equalsIgnoreCase('0')">
         	, ${longitude}
+        	</if>
+        	<if test="latitude != null and !latitude.equalsIgnoreCase('') and !latitude.equalsIgnoreCase('0')">
         	, ${latitude}
+        	</if>
         	, NOW()
         	, NOW()
         	, ${sharetype}
@@ -1774,8 +1784,6 @@
     			1 = 1
     		AND
     			PARENTIDX = ${parentIdx}
-    		AND
-    			CONTENTKIND = '${contentKind}'
     </delete>
     
     <select id="selectImageFileList" parameterType="paramMap" resultType="resultMap">
@@ -1890,6 +1898,12 @@
        			${saveIdxArr}
        		</foreach>
        	</if>
+       	<if test="removeIdx != null">
+       		<foreach collection="removeIdx" item="removeIdx" open= " AND IDX IN (" separator =","  close=")" >
+       			${removeIdx}
+       		</foreach>
+       	</if>
+       	
        	<if test="idx != null and idx != ''">
        		AND IDX = ${idx}
        	</if>
@@ -1916,8 +1930,8 @@
        	</if>
 		ORDER BY
 			COALESCE(SELECTYN,'N') DESC, UDATE DESC
-    </select>
-    
+    </select> 
+        
     <insert id="insertServer" parameterType="paramMap">
         INSERT INTO GEOCMS_SERVER
         (
@@ -2024,7 +2038,6 @@
        			${removeList}
        		</foreach>
        	</if>
-    		
     </delete>
-	
+    
 </mapper>
