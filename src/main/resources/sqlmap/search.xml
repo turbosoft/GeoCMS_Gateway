@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="search">
-     <select id="selectSearchList" parameterType="paramMap" resultType="resultMap">
+     <select id="selectSearchList" parameterType="paramMap" resultType="resultMap" flushCache="true">
         SELECT 
-        	* 
+        	 *
         FROM 
         	(
         	<if test="boardChk != null and boardChk.equalsIgnoreCase('true')">
@@ -94,7 +94,7 @@
         			,LATITUDE
 					,LONGITUDE
 					,THUMBNAIL
-					,(select ORIGINNAME from geocms_content_child where parentIdx = IDX  limit 1 ) AS ORIGINNAME
+					,ORIGINNAME
 					,XMLDATA
 					,'GeoVideo' AS DATAKIND
 					,SHARETYPE
