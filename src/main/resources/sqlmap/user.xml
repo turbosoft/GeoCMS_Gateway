@@ -416,9 +416,21 @@
     	WHERE
     		1 = 1
     	AND
-    		TGS.SHAREKIND = '${shareKind}'
-    	AND
-    		TGS.SHAREIDX = ${shareIdx}
+    		TGS.SHAREKIND = 'GeoProject'
+    	<choose>
+       		<when test="shareKind != null and shareKind.equalsIgnoreCase('GeoPhoto')">
+       			AND
+    				TGS.SHAREIDX = (select projectidx from geocms_image_content where idx = ${shareIdx})
+       		</when>
+       		<when test="shareKind != null and shareKind.equalsIgnoreCase('GeoVideo')">
+       			AND
+    				TGS.SHAREIDX = (select projectidx from geocms_video_content where idx = ${shareIdx})
+       		</when>
+       		<otherwise>
+       			AND
+    				TGS.SHAREIDX = ${shareIdx}
+       		</otherwise>
+       	</choose>
     	<if test="editUserChk != null and editUserChk.equalsIgnoreCase('Y')">
     		AND
     			TGS.UID = (SELECT UID FROM GEOCMS_USER WHERE id = '${loginId}')
