@@ -28,9 +28,73 @@ public class VideoEncoding {
 		if(osffmpeg != null && !"".equals(osffmpeg)){
 			if("win".equals(osffmpeg))
 			{
-			
+//				String[] message = new String[] {
+//						ffmpegSetting.getFfmpeg_dir_and_file_name(),
+//						"-i",
+//						file_name,
+//						ffmpegSetting.getSrc_no_ext(file_name)+"_mp4.mp4"
+//				};
+//				
 				String[] message = new String[] {
 						ffmpegSetting.getFfmpeg_dir_and_file_name(),
+						"-i",
+						file_name,
+						"-acodec",
+						"aac",
+						"-ab",
+						"192k",
+						"-ar",
+						"48000",
+						"-ac","2","-b:a","300k","-vcodec","libx264","-level","30","-b:v","3000k","-r","29.97","-s","1280:720","-threads","0","-strict","-2",
+
+//						"-deinterlace -r 24 -acodec libfaac -ab 96k -ac 2 -ar 44100 -crf 24 -s 1024x576 -vcodec libx264 -vpre normal -threads 0 -f mp4",
+
+//						"-deinterlace",
+//						"-r",
+//						"24",
+//						"-acodec",
+////						"libfaac",
+//						"aac",
+////						"-c:a","aac", "-strict", "experimental",
+////						"-c:a", "libfdk_aac",
+//						"-ab",
+//						"96k",
+//						"-ac",
+//						"2",
+//						"-ar",
+//						"44100",
+//						"-crf",
+//						"24",
+//						"-s",
+//						"1024x576",
+//						"-vcodec",
+//						"libx264",
+////						"-vpre",
+////						"normal",
+////						"-threads",
+////						"0",
+//						"-preset", "ultrafast", "-crf", "0",
+//						"-f",
+//						"mp4",
+						ffmpegSetting.getSrc_no_ext(file_name)+"_mp4.mp4"
+				};
+				
+				FFmpeg ffmpeg = new FFmpeg();
+				String value = ffmpeg.runFFmpeg(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
+				System.out.println("종료 정보 : "+value);
+				if(value != null && !"".equals(value)){
+					resInt = 1;
+				}
+			}
+			else if("linux".equals(osffmpeg))
+			{
+//				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
+//				System.out.println("convertToOgg : " + file_name);
+//				System.out.println("convertToOgg dirPath : " + dirPath);
+				
+				String[] message = new String[] {
+//						dirPath,
+						"ffmpeg",
 						"-i",
 						file_name,
 						"-acodec",
@@ -44,23 +108,7 @@ public class VideoEncoding {
 				};
 				
 				FFmpeg ffmpeg = new FFmpeg();
-				String value = ffmpeg.runFFmpeg(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
-				System.out.println("종료 정보 : "+value);
-				if(value != null && !"".equals(value)){
-					resInt = 1;
-				}
-			}
-			else if("linux".equals(osffmpeg))
-			{
-				
-				String[] message = new String[] {
-						"ffmpeg",
-						"-i",
-						file_name,
-						ffmpegSetting.getSrc_no_ext(file_name)+"_mp4.mp4"
-				};
-				
-				FFmpeg ffmpeg = new FFmpeg();
+//				String value = ffmpeg.runFFmpeg_linux(file_name, ffmpegSetting.getSrc_dir(file_name), message, "encoding");
 				String value = ffmpeg.runFFmpeg_linux(file_name, message, "encoding");
 				System.out.println("종료 정보 : "+ value);
 				if(value != null && "complete".equals(value)){
@@ -111,14 +159,20 @@ public class VideoEncoding {
 			else if("linux".equals(osffmpeg))
 			{
 				System.out.println("convertToGpx linux");
-
-				file_name = file_name.replaceAll("\\+", "\\");			
-
+//				file_name = file_name.replaceAll("/","\\");
+				file_name = file_name.replaceAll("\\+", "\\");
+				
+//				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
+//				System.out.println("convertToGpx : " + file_name);
+//				System.out.println("convertToGpx dirPath : " + dirPath);
 				
 				String[] message = new String[] {
 						"exiftool",
 						"-ee",
 						file_name
+//						,
+//						" > ",
+//						ffmpegSetting.getSrc_no_ext(file_name)+".gpx"
 				};
 				
 				FFmpeg ffmpeg = new FFmpeg();

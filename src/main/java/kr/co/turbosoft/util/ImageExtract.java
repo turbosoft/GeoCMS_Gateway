@@ -46,9 +46,10 @@ public class ImageExtract {
 			}
 			else if("linux".equals(osffmpeg))
 			{
-				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
+				System.out.println("ImageExtractor linux file_name : "+file_name);
+//				String dirPath = file_name.substring(0,file_name.lastIndexOf("/upload/GeoVideo")) + "/ffmpeg/bin/ffmpeg";
 				System.out.println("ImageExtractor : " + file_name);
-				System.out.println("ImageExtractor dirPath : " + dirPath);
+//				System.out.println("ImageExtractor dirPath : " + dirPath);
 				String[] message = new String[] { 
 					"ffmpeg",
 					"-i",
@@ -65,7 +66,7 @@ public class ImageExtract {
 				};
 				
 				FFmpeg ffmpeg = new FFmpeg();
-				ffmpeg.runFFmpeg_linux(file_name, dirPath, message, "thumb");
+				ffmpeg.runFFmpeg_linux(file_name, message, "thumb");
 			}
 		}
 		

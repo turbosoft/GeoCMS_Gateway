@@ -3,11 +3,15 @@ package kr.co.turbosoft.util;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
@@ -177,6 +181,30 @@ public class SaveController extends Thread{
 		String[] idxArr = null;
 		String savefullStr = "";
 		
+		int thumbnail_width1 = 110;
+		int thumbnail_height1 = 110;
+		int thumbnail_width2 = 600;
+		int thumbnail_height2 = 442;
+		FileOutputStream fs = null;
+		ByteArrayOutputStream baos = null;
+		ByteArrayInputStream in = null;
+		BufferedOutputStream baos2 = null;
+		byte[] changeBytes = null;
+		File changeFile = null; 
+		String tmpPrefixa = "";
+		String tmpLastfixa = "";
+		String tmpPreThumb = "";
+		File thumb_file_name1 = null;
+		File thumb_file_name2 = null;
+		BufferedImage sourceImage = null;
+		BufferedImage sourceImage2 = null;
+		Image scaledImage = null;
+		Image scaledImage2 = null;
+		BufferedImage newImage11 = null;
+		BufferedImage newImage22 = null;
+		Graphics g11 = null;
+		Graphics g22 = null;
+		
 		for(int k=0;k<fileList.size();k++){
 			tmpFtfFileName = "";
 			filePathStr = "";
@@ -191,7 +219,28 @@ public class SaveController extends Thread{
 			savefullStr = saveFiles.get(k);
 			removeFile = new ArrayList<File>();
 			
+			fs = null;
+			baos = null;
+			in = null;
+			baos2 = null;
+			changeBytes = null;
+			changeFile = null; 
+			tmpPrefixa = "";
+			tmpLastfixa = "";
+			tmpPreThumb = "";
+			thumb_file_name1 = null;
+			thumb_file_name2 = null;
+			sourceImage = null;
+			sourceImage2 = null;
+			scaledImage = null;
+			scaledImage2 = null;
+			newImage11 = null;
+			newImage22 = null;
+			g11 = null;
+			g22 = null;
+			
 			if(savefullStr != null && !"".equals(savefullStr) && fileList.get(k) != null && !"".equals(fileList.get(k))) {
+				
 				try {
 					fileMap = fileList.get(k);
 					if(fileMap != null && fileMap.get("file") != null && fileMap.get("file") != ""){
@@ -211,31 +260,41 @@ public class SaveController extends Thread{
 							if(fileType != null && !"".equals(fileType)){
 								if("imageFile".equals(fileType)){
 									//썸네일 이미지
-									int thumbnail_width1 = 110;
-									int thumbnail_height1 = 110;
+									changeFile = new File(savefullStr);
+									tmpPrefixa = savefullStr.substring(0, savefullStr.lastIndexOf("."));
+									tmpLastfixa = savefullStr.substring(savefullStr.lastIndexOf(".")+1);
 									
-									int thumbnail_width2 = 600;
-									int thumbnail_height2 = 442;
+									fs = new FileOutputStream(new File(tmpPrefixa + "_BASE_thumbnail."+tmpLastfixa));
 									
-									String tmpPreThumb = tmpFtfFileName.substring(0, tmpFtfFileName.lastIndexOf("."));
-									String tmpPrefix = savefullStr.substring(0, savefullStr.lastIndexOf("."));
-									File thumb_file_name1 = new File(tmpPrefix+"_thumbnail.png");
-									File thumb_file_name2 = new File(tmpPrefix+"_thumbnail_600.png");
+									baos = new ByteArrayOutputStream();
+									in = new ByteArrayInputStream(FileUtils.readFileToByteArray(changeFile));
+									baos2 = null;
+									Thumbnails.of(in).scale(1).toOutputStream(baos);
+									changeBytes = baos.toByteArray();
 									
-									BufferedImage sourceImage = ImageIO.read(new File(savefullStr));
-									Image scaledImage = sourceImage.getScaledInstance(thumbnail_width1,thumbnail_height1, Image.SCALE_DEFAULT);
-						        	BufferedImage newImage11 = new BufferedImage(thumbnail_width1, thumbnail_height1, BufferedImage.TYPE_INT_RGB);
-						        	Graphics g11 = newImage11.getGraphics();
+									baos2 = new BufferedOutputStream(fs);
+									baos2.write(changeBytes);
+									baos2.close();
+									baos2 = null;
+								    
+									thumb_file_name1 = new File(tmpPrefixa+"_thumbnail.png");
+									thumb_file_name2 = new File(tmpPrefixa+"_thumbnail_600.png");
+						        	
+									sourceImage = ImageIO.read(new File(tmpPrefixa + "_BASE_thumbnail."+tmpLastfixa));
+									scaledImage = sourceImage.getScaledInstance(thumbnail_width1,thumbnail_height1, Image.SCALE_DEFAULT);
+						        	newImage11 = new BufferedImage(thumbnail_width1, thumbnail_height1, BufferedImage.TYPE_INT_RGB);
+						        	g11 = newImage11.getGraphics();
 						        	g11.drawImage(scaledImage, 0, 0, null);
 						        	g11.dispose();
 						        	ImageIO.write(newImage11, "jpg", thumb_file_name1);
 						        	
-						        	Image scaledImage2 = sourceImage.getScaledInstance(thumbnail_width2,thumbnail_height2, Image.SCALE_DEFAULT);
-						        	BufferedImage newImage22 = new BufferedImage(thumbnail_width2, thumbnail_height2, BufferedImage.TYPE_INT_RGB);
-						        	Graphics g22 = newImage22.getGraphics();
+						        	sourceImage2 = ImageIO.read(new File(tmpPrefixa + "_BASE_thumbnail."+tmpLastfixa));
+						        	scaledImage2 = sourceImage2.getScaledInstance(thumbnail_width2,thumbnail_height2, Image.SCALE_DEFAULT);
+						        	newImage22 = new BufferedImage(thumbnail_width2, thumbnail_height2, BufferedImage.TYPE_INT_RGB);
+						        	g22 = newImage22.getGraphics();
 						        	g22.drawImage(scaledImage2, 0, 0, null);
 						        	g22.dispose();
-						        	ImageIO.write(newImage11, "jpg", thumb_file_name2);
+						        	ImageIO.write(newImage22, "jpg", thumb_file_name2);
 							        
 						        	if(isServerUrl){
 						        		removeFile.add(thumb_file_name1);

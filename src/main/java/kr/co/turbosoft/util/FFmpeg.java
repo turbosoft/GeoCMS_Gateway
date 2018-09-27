@@ -56,13 +56,13 @@ public class FFmpeg {
 	}
 	
 	//Run FFmpeg 리눅스용
-	public String runFFmpeg_linux(String file_name, String src_file_root_dir, String[] message, String type) {
+	public String runFFmpeg_linux(String file_name, String[] message, String type) {
 		String resStr = "";
 		File origin_file = null;
 		if(type.equals("encoding")) {
 			origin_file = new File(file_name);
 		}
-		System.out.println("runFFmpeg_linux:"+file_name + ":"+ src_file_root_dir +":"+ message + ":" +type);
+		System.out.println("runFFmpeg_linux:"+file_name +":"+ message + ":" +type);
 		
 		Process process = null;
 		
@@ -134,6 +134,37 @@ public class FFmpeg {
 		return resGpsDataArr;
 	}
 	
+	//Run exiftool linux
+	public List<String> runExiftool_linux(String file_name, String src_file_root_dir, String[] message, String type) {
+		List<String> resGpsDataArr = new ArrayList<String>();
+		
+		System.out.println("runFFmpeg:"+file_name + ":"+ src_file_root_dir +":"+ message + ":" +type);
+		
+		Process process = null;
+		
+		try {
+			ProcessBuilder processBuilder = new ProcessBuilder(message);
+			processBuilder.redirectErrorStream(true);
+			process = processBuilder.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+			process.destroy();
+			
+			return null;
+		}
+		
+		resGpsDataArr = cleanInputStream3(process.getInputStream());
+		
+		try {
+			process.waitFor();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			process.destroy();
+		}
+		
+		return resGpsDataArr;
+	}
+	
 	//인풋 스트림 제거
 	private void cleanInputStream(final InputStream is) {
 		new Thread() {
@@ -176,7 +207,7 @@ public class FFmpeg {
 			BufferedReader br = new BufferedReader(new InputStreamReader(is));
 			String cmd;
 			while((cmd = br.readLine()) != null) {
-				System.out.println("cmd:"+cmd);
+				System.out.println("cleanInputStream3 cmd:"+cmd);
 				if(cmd != null){
 					if(cmd.contains("GPS Latitude") || cmd.contains("GPS Longitude") || cmd.contains("GPS Position") || 
 						cmd.contains("GPS Date Time") || cmd.contains("Duration") && !isDji){
