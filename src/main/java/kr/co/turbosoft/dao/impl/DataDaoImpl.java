@@ -40,113 +40,45 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 		return resultIntegerValue;
 	}
 	
-	@Override
-	public List<Object> selectTabList(HashMap<String, Object> param) {
-		// TODO Auto-generated method stub
-		resultList = getSqlSession().selectList("data.selectTabList", param);
-		
-		return resultList;
-	}
-	
-	@Override
-	public int insertTab(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().insert("data.insertTab", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateTab(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateTab", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int deleteTab(HashMap<String, Object> param) {
-		resultIntegerValue = getSqlSession().delete("data.deleteTab", param);
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateTabIdxBoard(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateTabIdxBoard", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateTabBoardIdx(HashMap<String, Object> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateTabBoardIdx", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateTabIdxProject(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateTabIdxProject", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateTabProjectIdx(HashMap<String, Object> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateTabProjectIdx", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public List<Object> selectBoardList(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		resultList = getSqlSession().selectList("data.selectBoardList", param);
-		
-		return resultList;
-	}
-	
-	@Override
-	public HashMap<String, String> selectBoardListLen(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		result = getSqlSession().selectOne("data.selectBoardListLen", param);
-		
-		return result;
-	}
-	
-	@Override
-	public int insertBoard(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().insert("data.insertBoard", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int updateBoard(HashMap<String, String> param) {
-		// TODO Auto-generated method stub
-		
-		resultIntegerValue = getSqlSession().update("data.updateBoard", param);
-		
-		return resultIntegerValue;
-	}
-	
-	@Override
-	public int deleteBoard(HashMap<String, String> param) {
-		resultIntegerValue = getSqlSession().delete("data.deleteBoard", param);
-		return resultIntegerValue;
-	}
+//	@Override
+//	public List<Object> selectBoardList(HashMap<String, String> param) {
+//		// TODO Auto-generated method stub
+//		resultList = getSqlSession().selectList("data.selectBoardList", param);
+//		
+//		return resultList;
+//	}
+//	
+//	@Override
+//	public HashMap<String, String> selectBoardListLen(HashMap<String, String> param) {
+//		// TODO Auto-generated method stub
+//		result = getSqlSession().selectOne("data.selectBoardListLen", param);
+//		
+//		return result;
+//	}
+//	
+//	@Override
+//	public int insertBoard(HashMap<String, String> param) {
+//		// TODO Auto-generated method stub
+//		
+//		resultIntegerValue = getSqlSession().insert("data.insertBoard", param);
+//		
+//		return resultIntegerValue;
+//	}
+//	
+//	@Override
+//	public int updateBoard(HashMap<String, String> param) {
+//		// TODO Auto-generated method stub
+//		
+//		resultIntegerValue = getSqlSession().update("data.updateBoard", param);
+//		
+//		return resultIntegerValue;
+//	}
+//	
+//	@Override
+//	public int deleteBoard(HashMap<String, String> param) {
+//		resultIntegerValue = getSqlSession().delete("data.deleteBoard", param);
+//		return resultIntegerValue;
+//	}
 	
 	@Override
 	public List<Object> selectAllContentList(HashMap<String, Object> param) {
@@ -475,5 +407,13 @@ public class DataDaoImpl extends SqlSessionDaoSupport implements DataDao {
 		resultIntegerValue = getSqlSession().delete("data.deleteServer", param);
 		
 		return resultIntegerValue;
+	}
+	
+	@Override
+	public List<Object> selectMainProjectList(HashMap<String, String> param) {
+		// TODO Auto-generated method stub
+		resultList = getSqlSession().selectList("data.selectMainProjectList", param);
+		
+		return resultList;
 	}
 }
