@@ -9,21 +9,11 @@ public interface DataDao {
 	public int insertBase(HashMap<String, String> param);
 	public int updateBase(HashMap<String, String> param);
 	
-	public List<Object> selectTabList(HashMap<String, Object> param);
-	public int insertTab(HashMap<String, String> param);
-	public int updateTab(HashMap<String, String> param);
-	public int deleteTab(HashMap<String, Object> param);
-	
-	public int updateTabIdxBoard(HashMap<String, String> param);
-	public int updateTabBoardIdx(HashMap<String, Object> param);
-	public int updateTabIdxProject(HashMap<String, String> param);
-	public int updateTabProjectIdx(HashMap<String, Object> param);
-	
-	public List<Object> selectBoardList(HashMap<String, String> param);
-	public HashMap<String, String> selectBoardListLen(HashMap<String, String> param);
-	public int insertBoard(HashMap<String, String> param);
-	public int updateBoard(HashMap<String, String> param);
-	public int deleteBoard(HashMap<String, String> param);
+//	public List<Object> selectBoardList(HashMap<String, String> param);
+//	public HashMap<String, String> selectBoardListLen(HashMap<String, String> param);
+//	public int insertBoard(HashMap<String, String> param);
+//	public int updateBoard(HashMap<String, String> param);
+//	public int deleteBoard(HashMap<String, String> param);
 	
 	public List<Object> selectAllContentList(HashMap<String, Object> param);
 	public List<Object> selectContentList(HashMap<String, String> param);
@@ -74,4 +64,6 @@ public interface DataDao {
 	public int insertServer(HashMap<String, String> param);
 	public int updateServer(HashMap<String, String> param);
 	public int deleteServer(HashMap<String, Object> param);
+	
+	public List<Object> selectMainProjectList(HashMap<String, String> param);
 }
