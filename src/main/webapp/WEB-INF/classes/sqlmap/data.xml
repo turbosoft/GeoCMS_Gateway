@@ -21,7 +21,7 @@
         	LONGITUDE
         )
         VALUES
-        	${mapZoom}
+        (	${mapZoom}
         	,'ADMIN,DELETE,MODIFY,WRITE'
         	,'${latitude}'
         	,'${longitude}'
