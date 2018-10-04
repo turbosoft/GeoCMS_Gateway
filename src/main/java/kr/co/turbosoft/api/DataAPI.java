@@ -2678,7 +2678,7 @@ public class DataAPI {
 						saveUserPathDir = new File(saveUserPath);
 					    if(!saveUserPathDir.exists()) saveUserPathDir.mkdir();
 						
-						int uploadMaxSize = 5*1024*1024*1024; //1024MB = 1GB
+						int uploadMaxSize = 2*1024*1024*1024; //1024MB = 1GB
 						tempDir = new File(saveUserPath+"/"+"tmp");
 						uploadDir = new File(saveUserPath);
 						 
