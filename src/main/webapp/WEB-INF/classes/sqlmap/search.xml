@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="search">
-     <select id="selectSearchList" parameterType="paramMap" resultType="resultMap" flushCache="true">
+     <select id="selectSearchList" parameterType="paramMap" resultType="resultMap">
         SELECT 
-        	 *
+        	* 
         FROM 
         	(
         	<if test="boardChk != null and boardChk.equalsIgnoreCase('true')">
@@ -16,14 +16,13 @@
         			,TO_CHAR(UDATE,'YYYY-mm-dd') U_DATE
         			,UDATE
         			,IDX
+        			,(SELECT tabname FROM GEOCMS_TAB WHERE tabidx = GEOCMS_BOARD_CONTENT.tabidx AND tabgroup = 'board') AS TABNAME
         			,NULL AS LATITUDE
 					,NULL AS LONGITUDE
 					,NULL AS THUMBNAIL
 					,NULL AS ORIGINNAME
 					,NULL AS XMLDATA
-					,NULL AS PROJECTIDX
-					,NULL AS DRONETYPE
-					,'GeoCMS'::text AS DATAKIND
+					,'GeoCMS' AS DATAKIND
 					,SHARETYPE
 				FROM
 					GEOCMS_BOARD_CONTENT
@@ -48,14 +47,13 @@
         			,TO_CHAR(UDATE,'YYYY-mm-dd') U_DATE
         			,UDATE
         			,IDX
+        			,(SELECT tabname FROM GEOCMS_TAB WHERE tabidx = (SELECT tabIdx FROM GEOCMS_PROJECT_CONTENT WHERE GEOCMS_PROJECT_CONTENT.idx = GEOCMS_IMAGE_CONTENT.projectIdx)AND tabgroup = 'content') AS TABNAME
         			,LATITUDE
 					,LONGITUDE
 					,NULL AS THUMBNAIL
 					,NULL AS ORIGINNAME
 					,XMLDATA
-					,PROJECTIDX
-					,DRONETYPE
-					,'GeoPhoto'::text AS DATAKIND
+					,'GeoPhoto' AS DATAKIND
 					,SHARETYPE
 				FROM
 					GEOCMS_IMAGE_CONTENT
@@ -92,14 +90,13 @@
         			,TO_CHAR(UDATE,'YYYY-mm-dd') U_DATE
         			,UDATE
         			,IDX
+        			,(SELECT tabname FROM GEOCMS_TAB WHERE tabidx = (SELECT tabIdx FROM GEOCMS_PROJECT_CONTENT WHERE GEOCMS_PROJECT_CONTENT.idx = GEOCMS_VIDEO_CONTENT.projectIdx)AND tabgroup = 'content') AS TABNAME
         			,LATITUDE
 					,LONGITUDE
 					,THUMBNAIL
-					,ORIGINNAME
+					,(select ORIGINNAME from geocms_content_child where parentIdx = IDX  limit 1 ) AS ORIGINNAME
 					,XMLDATA
-					,PROJECTIDX
-					,DRONETYPE
-					,'GeoVideo'::text AS DATAKIND
+					,'GeoVideo' AS DATAKIND
 					,SHARETYPE
 				FROM
 					GEOCMS_VIDEO_CONTENT
