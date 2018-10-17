@@ -21,7 +21,7 @@
         	LONGITUDE
         )
         VALUES
-        	${mapZoom}
+        (	${mapZoom}
         	,'ADMIN,DELETE,MODIFY,WRITE'
         	,'${latitude}'
         	,'${longitude}'
@@ -726,6 +726,9 @@
     		<if test="status != null and status != ''">
     			,STATUS		= '${status}'
     		</if>
+    		<if test="droneType != null and droneType != ''">
+    			,DRONETYPE		= '${droneType}'
+    		</if>
     	WHERE 
     		1 = 1
     	AND
@@ -793,8 +796,8 @@
 				,DRONETYPE
 				,(SELECT id FROM GEOCMS_PROJECT_CONTENT GP1 WHERE GP1.idx = GEOCMS_VIDEO_CONTENT.projectIdx) AS PROJECTUSERID
 				,(SELECT projectname FROM GEOCMS_PROJECT_CONTENT GP2 WHERE GP2.idx = GEOCMS_VIDEO_CONTENT.projectIdx) AS PROJECTNAME
-				,(SELECT sharetype FROM GEOCMS_PROJECT_CONTENT GPC3 WHERE GPC3.idx = GEOCMS_IMAGE_CONTENT.PROJECTIDX) projectsharetype
-				,(SELECT TO_CHAR(UDATE,'YYYY-mm-dd') U_DATE FROM GEOCMS_PROJECT_CONTENT GPC4 WHERE GPC4.idx = GEOCMS_IMAGE_CONTENT.PROJECTIDX) projectudate
+				,(SELECT sharetype FROM GEOCMS_PROJECT_CONTENT GPC3 WHERE GPC3.idx = GEOCMS_VIDEO_CONTENT.PROJECTIDX) projectsharetype
+				,(SELECT TO_CHAR(UDATE,'YYYY-mm-dd') U_DATE FROM GEOCMS_PROJECT_CONTENT GPC4 WHERE GPC4.idx = GEOCMS_VIDEO_CONTENT.PROJECTIDX) projectudate
 			FROM 
 				GEOCMS_VIDEO_CONTENT
 		) T_TABLE
@@ -990,6 +993,9 @@
     		</if>
     		<if test="gpsData != null and gpsData != ''">
     			,GPSDATA		=  '${gpsData}'
+    		</if>
+    		<if test="droneType != null and droneType != ''">
+    			,DRONETYPE		=  '${droneType}'
     		</if>
     	WHERE 
     		1 = 1
@@ -1530,6 +1536,10 @@
 	    	,STATUS
 	    	,(select projectidx from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx ) PROJECTIDX
 	    	,(select gpsdata from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) GPSDATA
+            ,(select title from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) title
+            ,(select content from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) contents
+            ,(select sharetype from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) sharetype
+            ,(select dronetype from geocms_video_content where idx = GEOCMS_CONTENT_CHILD.parentidx) dronetype
 	    FROM
 	    	GEOCMS_CONTENT_CHILD
 		WHERE
@@ -1863,12 +1873,11 @@
     
     <select id="selectMainProjectList" parameterType="paramMap" resultType="resultMap">
     	SELECT
-    		PROJECTID, PROJECTNAME, PROJECTIDX, PROJECTUDATE, PROJECTRDATE, PROJECTSHARETYPE, MAX(UDATE) UDATE,
-    		MAX(LATITUDE) LATITUDE, MAX(LONGITUDE) LONGITUDE
+    		*
     	FROM
     		(
 			SELECT
-	    		*
+	    		*,  row_number() over(partition by projectidx order by seqnum ) rnum
 	    	FROM
 	    	(
 			    SELECT
@@ -2006,12 +2015,11 @@
 		 			AND
 		 				PROJECTIDX = ${projectIdx}
 				</if>
-			    
-			 ORDER BY U_DATE
+			    	AND STATUS = 'COMPLETE'
 			 
 			)PROJECTGROUP
-		GROUP BY
-			PROJECTID, PROJECTNAME, PROJECTIDX, PROJECTUDATE, PROJECTRDATE, PROJECTSHARETYPE
+		WHERE
+			RNUM = 1
 		ORDER BY 			
 			UDATE
 			<if test="orderType != null and orderType.equalsIgnoreCase('DESC')">
