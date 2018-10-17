@@ -263,6 +263,7 @@ public class SaveController extends Thread{
 									changeFile = new File(savefullStr);
 									tmpPrefixa = savefullStr.substring(0, savefullStr.lastIndexOf("."));
 									tmpLastfixa = savefullStr.substring(savefullStr.lastIndexOf(".")+1);
+									tmpPreThumb = savefullStr.substring(savefullStr.lastIndexOf(File.separator)+1);
 									
 									fs = new FileOutputStream(new File(tmpPrefixa + "_BASE_thumbnail."+tmpLastfixa));
 									
