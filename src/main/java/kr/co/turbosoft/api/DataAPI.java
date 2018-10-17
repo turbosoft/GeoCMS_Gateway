@@ -1847,7 +1847,7 @@ public class DataAPI {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 
-	@RequestMapping(value = "/cms/updateImage/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{latitude}/{longitude}/{editYes}/{editNo}/{coplyUrlSave}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateImage/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{latitude}/{longitude}/{editYes}/{editNo}/{coplyUrlSave}/{droneType}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateImageService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -1864,6 +1864,7 @@ public class DataAPI {
 			, @PathVariable("editYes") String editYes
 			, @PathVariable("editNo") String editNo
 			, @PathVariable("coplyUrlSave") String coplyUrlSave
+			, @PathVariable("droneType") String droneType
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
@@ -1911,6 +1912,7 @@ public class DataAPI {
 				}
 				editYes = editYes.replace("&nbsp", "");
 				editNo = editNo.replace("&nbsp", "");
+				droneType = droneType.replace("&nbsp", "");
 				
 				if(!(title != null && !"".equals(title) && content != null && !"".equals(content) && 
 						idx != null && !"".equals(idx) && StringUtils.isNumeric(idx) &&
@@ -1935,6 +1937,7 @@ public class DataAPI {
 					param.put("xmlData", xmlData);
 					param.put("latitude", latitude);
 					param.put("longitude", longitude);
+					param.put("droneType", droneType);
 					
 					resultIntegerValue = dataDao.updateImage(param);
 					
@@ -2931,7 +2934,7 @@ public class DataAPI {
 		return callback + "(" + resultJSON.toString() + ")";
 	}
 	
-	@RequestMapping(value = "/cms/updateVideo/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{editYes}/{editNo}/{coplyUrlSave}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
+	@RequestMapping(value = "/cms/updateVideo/{token}/{loginId}/{idx}/{title}/{content}/{shareType}/{addShareUser}/{removeShareUser}/{xmlData}/{editYes}/{editNo}/{coplyUrlSave}/{droneType}", method = RequestMethod.POST, produces="application/json;charset=UTF-8")
 	@ResponseBody
 	public String updateVideoService(@RequestParam("callback") String callback
 			, @PathVariable("token") String token
@@ -2946,6 +2949,7 @@ public class DataAPI {
 			, @PathVariable("editYes") String editYes
 			, @PathVariable("editNo") String editNo
 			, @PathVariable("coplyUrlSave") String coplyUrlSave
+			, @PathVariable("droneType") String droneType
 			, Model model, HttpServletRequest request) {
 		JSONObject resultJSON = new JSONObject();
 		param = new HashMap<String, String>();
@@ -2992,6 +2996,7 @@ public class DataAPI {
 				}
 				editYes = editYes.replace("&nbsp", "");
 				editNo = editNo.replace("&nbsp", "");
+				droneType = droneType.replace("&nbsp", "");
 				
 				if(!(title != null && !"".equals(title) && content != null && !"".equals(content) && 
 						idx != null && !"".equals(idx) && StringUtils.isNumeric(idx) &&
@@ -3014,6 +3019,7 @@ public class DataAPI {
 					param.put("content", content);
 					param.put("shareType", shareType);
 					param.put("xmlData", xmlData);
+					param.put("droneType", droneType);
 					resultIntegerValue = dataDao.updateVideo(param);
 					
 					if(resultIntegerValue == 1) {
