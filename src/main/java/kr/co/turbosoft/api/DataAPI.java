@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -21,7 +22,7 @@ import javax.sql.DataSource;
 
 import kr.co.turbosoft.dao.DataDao;
 import kr.co.turbosoft.dao.UserDao;
-import kr.co.turbosoft.util.ContentsSave;
+//import kr.co.turbosoft.util.ContentsSave;
 import kr.co.turbosoft.util.KeyManager;
 import kr.co.turbosoft.util.SaveController;
 import kr.co.turbosoft.util.VideoSaveController;
@@ -34,7 +35,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
+//import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -51,6 +52,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import sun.security.util.BigInt;
 
 import com.oreilly.servlet.multipart.DefaultFileRenamePolicy;
 import com.oreilly.servlet.multipart.FilePart;
@@ -132,7 +135,7 @@ public class DataAPI {
 		param = new HashMap<String, String>();
 		resultList = new ArrayList<Object>();
 		param.put("token", token);
-		HashMap<String, Object> objParam = new HashMap<String, Object>();
+//		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		
 		try {
 			result = userDao.selectUid(param);
@@ -194,7 +197,7 @@ public class DataAPI {
 		param = new HashMap<String, String>();
 		resultList = new ArrayList<Object>();
 		param.put("token", token);
-		HashMap<String, Object> objParam = new HashMap<String, Object>();
+//		HashMap<String, Object> objParam = new HashMap<String, Object>();
 		
 		try {
 			result = userDao.selectUid(param);
@@ -1513,7 +1516,11 @@ public class DataAPI {
 				return callback + "(" + resultJSON.toString() + ")";
 			}
 			
-			int uploadMaxSize = 5*1024*1024*1024; //1024MB = 1GB
+//			int uploadMaxSize = 1*1024*1024*1024; //1024MB = 10GB
+//			BigInteger uploadMaxSize2 = BigInteger.valueOf(2*1024*1024*1024);
+//			int uploadMaxSizeaa = uploadMaxSize2.intValue();
+//			uploadMaxSizeaa = Math.abs(uploadMaxSizeaa);
+			int uploadMaxSize  = Integer.MAX_VALUE; //2147483648 Byte  = 2GB
 			
 			//update token time
 			param.put("uid", String.valueOf(result.get("uid")));
@@ -1539,20 +1546,20 @@ public class DataAPI {
 			System.out.println("isMultipart : "+isMultipart);
 			
 			FTPClient ftp = null; // FTP Client 객체 
-			FileInputStream fis = null; // File Input Stream 
+//			FileInputStream fis = null; // File Input Stream 
 			int reply = 0;
 			
 			DiskFileItemFactory factory = new DiskFileItemFactory(uploadMaxSize, tempDir);
 			ServletFileUpload upload = new ServletFileUpload(factory);
 			
-			ContentsSave contentsSave = new ContentsSave();
-			String reseultData = "";
-			String[] reseultDataArr = null;
-			String datalongitude = "";
-			String datalatitude = "";
-			String datatmpUploadFile = "";
+//			ContentsSave contentsSave = new ContentsSave();
+//			String reseultData = "";
+//			String[] reseultDataArr = null;
+//			String datalongitude = "";
+//			String datalatitude = "";
+//			String datatmpUploadFile = "";
 			
-			FileItem item = null;
+//			FileItem item = null;
 			
 			String logIdx = "";
 			String fileName = "";
@@ -1684,10 +1691,12 @@ public class DataAPI {
 			                }
 			                
 			            }// end while 
-					} catch (Exception e1) {
+					} catch (IOException  e1) {
 						e1.printStackTrace();
 						resultJSON.put("Code", 400);
-						resultJSON.put("Message", Message.code400);
+						
+						String fileSize = String.valueOf(uploadMaxSize/(1024*1024*1024));  
+						resultJSON.put("Message", "\n※ 파일 용량 제한("+ fileSize+"GB) 초과");
 						return callback + "(" + resultJSON.toString() + ")";
 					}
 					//////////////////////////////////////////////////////////
@@ -1740,11 +1749,11 @@ public class DataAPI {
 					
 					for(int k=0; k< origFiles.size(); k++){
 						uploadFilePath = "";
-						reseultData = "";
-						reseultDataArr = null;
-						datalongitude = "";
-						datalatitude = "";
-						datatmpUploadFile = "";
+//						reseultData = "";
+//						reseultDataArr = null;
+//						datalongitude = "";
+//						datalatitude = "";
+//						datatmpUploadFile = "";
 						resultIntegerValue = 0;
 						fileMap = new HashMap<String, String>();
 						
@@ -2098,7 +2107,7 @@ public class DataAPI {
 	                
 					try{
 						FTPClient ftp = null; // FTP Client 객체 
-						FileInputStream fis = null; // File Input Stream 
+//						FileInputStream fis = null; // File Input Stream 
 						int reply = 0;
 						File tmpF1 = null;
 						
@@ -2712,7 +2721,7 @@ public class DataAPI {
 						String fileName = "";
 						String changeFileName = "";
 						int gpxFileIndex = 1;
-						File uploadFile;
+						File uploadFile = null;
 						String oldSubfix = "";
 						File tmpGpxFilePathDir = uploadDir;
 						String tmpGpxFilePath = "";
@@ -4175,7 +4184,7 @@ public class DataAPI {
 				File saveUserPathDir = null;
 				ArrayList<FileItem> fileItemListV = new ArrayList<FileItem>();
 				Map<String,String> fileMap = new HashMap<String, String>();
-				int uploadMaxSize = 5*1024*1024*1024; //1024MB = 1GB
+				int uploadMaxSize = 2*1024*1024*1024; //1024MB = 1GB
 			    File tempDir = null;
 				File uploadDir = null;
 				List items = null;
