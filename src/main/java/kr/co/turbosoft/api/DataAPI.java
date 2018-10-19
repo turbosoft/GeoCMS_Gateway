@@ -1516,10 +1516,6 @@ public class DataAPI {
 				return callback + "(" + resultJSON.toString() + ")";
 			}
 			
-//			int uploadMaxSize = 1*1024*1024*1024; //1024MB = 10GB
-//			BigInteger uploadMaxSize2 = BigInteger.valueOf(2*1024*1024*1024);
-//			int uploadMaxSizeaa = uploadMaxSize2.intValue();
-//			uploadMaxSizeaa = Math.abs(uploadMaxSizeaa);
 			int uploadMaxSize  = Integer.MAX_VALUE; //2147483648 Byte  = 2GB
 			
 			//update token time
@@ -1696,7 +1692,7 @@ public class DataAPI {
 						resultJSON.put("Code", 400);
 						
 						String fileSize = String.valueOf(uploadMaxSize/(1024*1024*1024));  
-						resultJSON.put("Message", "\n※ 파일 용량 제한("+ fileSize+"GB) 초과");
+						resultJSON.put("Message", "\n※File capacity limit("+ fileSize+"GB) exceeded");
 						return callback + "(" + resultJSON.toString() + ")";
 					}
 					//////////////////////////////////////////////////////////
