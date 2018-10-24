@@ -104,14 +104,29 @@ public class EncodingController extends Thread{
 					
 					reply = ftp.getReplyCode();//
 					if(!FTPReply.isPositiveCompletion(reply)) {
-						ftp.disconnect();
 						ftpError(param);
+						if(ftp != null && ftp.isConnected()){
+							try {
+								ftp.disconnect();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+					    }
 						return;
 				    }
 					
 					if(!ftp.login(b_serverId, b_serverPass)) {
 						ftp.logout();
 						ftpError(param);
+						if(ftp != null && ftp.isConnected()){
+							try {
+								ftp.disconnect();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+					    }
 						return;
 				    }
 					
@@ -126,12 +141,28 @@ public class EncodingController extends Thread{
 				    	reply = ftp.getReplyCode();
 				    	if (reply == 550) {
 				    		ftpError(param);
+				    		if(ftp != null && ftp.isConnected()){
+				    			try {
+				    				ftp.disconnect();
+				    			} catch (IOException e) {
+				    				// TODO Auto-generated catch block
+				    				e.printStackTrace();
+				    			}
+				    	    }
 							return;
 				    	}
 				    	ftp.changeWorkingDirectory(b_serverPath+"/"+uploadType); // 작업 디렉토리 변경
 				    	reply = ftp.getReplyCode();
 				    	if (reply == 550) {
 				    		ftpError(param);
+				    		if(ftp != null && ftp.isConnected()){
+				    			try {
+				    				ftp.disconnect();
+				    			} catch (IOException e) {
+				    				// TODO Auto-generated catch block
+				    				e.printStackTrace();
+				    			}
+				    	    }
 							return;
 				    	}
 				    }
@@ -219,11 +250,11 @@ public class EncodingController extends Thread{
 								    }
 			    				}
 			    			}
-			    		}
+			    		}//for
 					} catch(IOException ie) {
 						ie.printStackTrace(); 
 						if(isServerUrl){
-							ftpError(param);	
+							ftpError(param);
 						}
 						return;
 					} finally {
@@ -233,22 +264,21 @@ public class EncodingController extends Thread{
 							} catch(IOException ie) {
 								ie.printStackTrace();
 								if(isServerUrl){
-									ftpError(param);	
+									ftpError(param);
 								}
 								return;
 							}
 						}
 					}
-			    }
+			    }//for
 			    
 			    param.put("status", "COMPLETE");
 		    	dataDao.updateLog(param);
 		    	
-				
 			}catch(Exception e){
 				e.printStackTrace();
 				if(isServerUrl){
-					ftpError(param);	
+					ftpError(param);
 				}
 			}finally{
 				if(isServerUrl && userTempDir.exists() && removeFileList != null){
@@ -258,6 +288,16 @@ public class EncodingController extends Thread{
 							t1.delete();
 						}
 					}
+				}
+				if(isServerUrl){
+					if(ftp != null && ftp.isConnected()){
+						try {
+							ftp.disconnect();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+				    }
 				}
 			}
 		}
